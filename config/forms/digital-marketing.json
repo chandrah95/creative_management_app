@@ -1,0 +1,49 @@
+{
+  "id": "digital-marketing",
+  "name": "Digital Marketing",
+  "fields": [
+    { "type": "input",    "name": "title",         "label": "Campaign / Asset Title",  "placeholder": "e.g. Q2 Email Banner", "required": true, "width": "full" },
+    { "type": "textarea", "name": "description",   "label": "Campaign Brief",          "placeholder": "Describe the campaign objective...", "required": true, "width": "full", "rows": 4 },
+    { "type": "dropdown", "name": "asset_type",    "label": "Asset Type",              "required": true, "width": "half",
+      "options": [
+        { "value": "banner",        "label": "Web Banner" },
+        { "value": "email",         "label": "Email Template" },
+        { "value": "landing_page",  "label": "Landing Page Visual" },
+        { "value": "display_ad",    "label": "Display Ad" },
+        { "value": "infographic",   "label": "Infographic" },
+        { "value": "other",         "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",      "label": "Priority",                "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "date",     "name": "go_live_date",  "label": "Go-Live Date",            "required": true,  "width": "half" },
+    { "type": "date",     "name": "deadline",      "label": "Creative Deadline",       "required": true,  "width": "half" },
+    { "type": "input",    "name": "dimensions",    "label": "Dimensions / Sizes",      "placeholder": "e.g. 728x90, 300x250", "required": false, "width": "half" },
+    { "type": "input",    "name": "channel",       "label": "Target Channel",          "placeholder": "e.g. Google Ads, Email, Website", "required": false, "width": "half" },
+    { "type": "url",      "name": "reference_url", "label": "Reference Link",          "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "textarea", "name": "copy_notes",    "label": "Copy / Messaging Notes",  "placeholder": "Key messages, CTA, tone of voice...", "required": false, "width": "full", "rows": 3 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add Size / Variant",
+    "fields": [
+      { "type": "input",    "name": "child_title",      "label": "Variant Title",      "required": true,  "width": "full" },
+      { "type": "input",    "name": "child_dimensions", "label": "Dimensions",         "required": true,  "width": "half" },
+      { "type": "dropdown", "name": "child_format",     "label": "Format",             "required": false, "width": "half",
+        "options": [
+          { "value": "jpg",  "label": "JPG" },
+          { "value": "png",  "label": "PNG" },
+          { "value": "gif",  "label": "GIF" },
+          { "value": "html5","label": "HTML5" }
+        ]
+      },
+      { "type": "textarea", "name": "child_notes",      "label": "Notes",              "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}

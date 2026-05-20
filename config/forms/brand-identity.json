@@ -1,0 +1,47 @@
+{
+  "id": "brand-identity",
+  "name": "Brand & Identity",
+  "fields": [
+    { "type": "input",    "name": "title",        "label": "Request Title",        "placeholder": "e.g. New Logo Design", "required": true,  "width": "full" },
+    { "type": "textarea", "name": "description",  "label": "Brief Description",    "placeholder": "Describe what you need...", "required": true, "width": "full", "rows": 4 },
+    { "type": "dropdown", "name": "asset_type",   "label": "Asset Type",           "required": true, "width": "half",
+      "options": [
+        { "value": "logo",       "label": "Logo" },
+        { "value": "brand_guide","label": "Brand Guidelines" },
+        { "value": "color",      "label": "Color Palette" },
+        { "value": "typography", "label": "Typography" },
+        { "value": "icon_set",   "label": "Icon Set" },
+        { "value": "other",      "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",     "label": "Priority",             "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "date",     "name": "deadline",     "label": "Deadline",             "required": true,  "width": "half" },
+    { "type": "number",   "name": "revisions",    "label": "Max Revisions",        "required": false, "width": "half", "min": 1, "max": 10, "default": 3 },
+    { "type": "url",      "name": "reference_url","label": "Reference / Inspiration Link", "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "input",    "name": "file_format",  "label": "Required File Formats","placeholder": "e.g. AI, PDF, PNG", "required": false, "width": "half" },
+    { "type": "textarea", "name": "notes",        "label": "Additional Notes",     "placeholder": "Any other details...", "required": false, "width": "full", "rows": 3 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add Sub-task",
+    "fields": [
+      { "type": "input",    "name": "child_title",  "label": "Sub-task Title",   "required": true,  "width": "full" },
+      { "type": "dropdown", "name": "child_type",   "label": "Type",             "required": true,  "width": "half",
+        "options": [
+          { "value": "design",   "label": "Design" },
+          { "value": "revision", "label": "Revision" },
+          { "value": "delivery", "label": "Delivery" }
+        ]
+      },
+      { "type": "date",     "name": "child_due",    "label": "Due Date",         "required": false, "width": "half" },
+      { "type": "textarea", "name": "child_notes",  "label": "Notes",            "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}

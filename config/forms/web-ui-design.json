@@ -1,0 +1,51 @@
+{
+  "id": "web-ui-design",
+  "name": "Web & UI Design",
+  "fields": [
+    { "type": "input",    "name": "title",        "label": "Request Title",           "placeholder": "e.g. Homepage Redesign", "required": true, "width": "full" },
+    { "type": "textarea", "name": "description",  "label": "Design Brief",            "placeholder": "Describe what needs to be designed...", "required": true, "width": "full", "rows": 4 },
+    { "type": "dropdown", "name": "design_type",  "label": "Design Type",             "required": true, "width": "half",
+      "options": [
+        { "value": "webpage",    "label": "Web Page" },
+        { "value": "landing",    "label": "Landing Page" },
+        { "value": "ui_screen",  "label": "UI Screen / App" },
+        { "value": "component",  "label": "UI Component" },
+        { "value": "email_html", "label": "HTML Email" },
+        { "value": "prototype",  "label": "Prototype / Wireframe" },
+        { "value": "other",      "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",     "label": "Priority",                "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "date",     "name": "deadline",     "label": "Deadline",                "required": true,  "width": "half" },
+    { "type": "number",   "name": "screens",      "label": "Number of Screens / Pages","required": false, "width": "half", "min": 1, "max": 100, "default": 1 },
+    { "type": "input",    "name": "breakpoints",  "label": "Breakpoints / Devices",   "placeholder": "e.g. Desktop, Tablet, Mobile", "required": false, "width": "half" },
+    { "type": "input",    "name": "design_tool",  "label": "Design Tool Preference",  "placeholder": "e.g. Figma, Adobe XD", "required": false, "width": "half" },
+    { "type": "url",      "name": "figma_url",    "label": "Figma / Design File Link","placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "url",      "name": "reference_url","label": "Reference / Inspiration", "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "textarea", "name": "tech_notes",   "label": "Technical Notes",         "placeholder": "Framework, accessibility requirements, handoff notes...", "required": false, "width": "full", "rows": 3 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add Page / Screen",
+    "fields": [
+      { "type": "input",    "name": "child_title",    "label": "Page / Screen Name",   "required": true,  "width": "full" },
+      { "type": "dropdown", "name": "child_type",     "label": "Screen Type",          "required": false, "width": "half",
+        "options": [
+          { "value": "desktop", "label": "Desktop" },
+          { "value": "mobile",  "label": "Mobile" },
+          { "value": "tablet",  "label": "Tablet" }
+        ]
+      },
+      { "type": "date",     "name": "child_due",      "label": "Due Date",             "required": false, "width": "half" },
+      { "type": "url",      "name": "child_ref",      "label": "Reference URL",        "required": false, "width": "full" },
+      { "type": "textarea", "name": "child_notes",    "label": "Notes",                "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}

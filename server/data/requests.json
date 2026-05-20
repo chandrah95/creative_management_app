@@ -1,0 +1,38 @@
+[
+  {
+    "id": "a981a4de-bac4-494d-895f-c12b21a60e06",
+    "status": "pending",
+    "submittedAt": "2026-05-20T07:50:06.716Z",
+    "project": "brand-identity",
+    "fields": {
+      "title": "Fasti Campaign",
+      "description": "This campaign will create a huge movement on campaign",
+      "asset_type": "brand_guide",
+      "priority": "low",
+      "deadline": "2026-05-21",
+      "revisions": 3,
+      "reference_url": "https://www.google.com/search?q=vite&oq=vite&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIKCAEQABixAxiABDINCAIQABiDARixAxiABDIKCAMQABixAxiABDIKCAQQABixAxiABDIHCAUQLhiABDIKCAYQABixAxiABDIQCAcQABiDARixAxiABBiKBTIHCAgQABiABDIQCAkQLhjHARixAxjRAxiABNIBCDIwMTNqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8",
+      "file_format": "PNG",
+      "notes": "Tolong Segera"
+    },
+    "childIssues": [
+      {
+        "child_title": "Homepage Banner",
+        "child_type": "design",
+        "child_due": "2026-05-22",
+        "child_notes": ""
+      },
+      {
+        "child_title": "Category Tile",
+        "child_type": "design",
+        "child_due": "2026-05-20",
+        "child_notes": "Yang ini buru buru"
+      }
+    ],
+    "submittedBy": {
+      "id": "aadf0332-ed50-44e6-b79d-70d7fc40cc4c",
+      "email": "admin@company.com",
+      "name": "Admin"
+    }
+  }
+]

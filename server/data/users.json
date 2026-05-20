@@ -1,0 +1,9 @@
+[
+  {
+    "id": "aadf0332-ed50-44e6-b79d-70d7fc40cc4c",
+    "email": "admin@company.com",
+    "password": "$2a$10$1nvL25r5yFjCTw4EK9O/BeNjC/7YoIgq9.OyEkr/aMRuEqFPkbLQm",
+    "name": "Admin",
+    "role": "admin"
+  }
+]

@@ -1,0 +1,58 @@
+{
+  "id": "social-media",
+  "name": "Social Media Content",
+  "fields": [
+    { "type": "input",    "name": "title",        "label": "Content Title",           "placeholder": "e.g. Product Launch Post", "required": true, "width": "full" },
+    { "type": "textarea", "name": "description",  "label": "Content Brief",           "placeholder": "What should this content communicate?", "required": true, "width": "full", "rows": 4 },
+    { "type": "dropdown", "name": "platform",     "label": "Platform",                "required": true, "width": "half",
+      "options": [
+        { "value": "instagram",  "label": "Instagram" },
+        { "value": "facebook",   "label": "Facebook" },
+        { "value": "twitter_x",  "label": "Twitter / X" },
+        { "value": "linkedin",   "label": "LinkedIn" },
+        { "value": "tiktok",     "label": "TikTok" },
+        { "value": "youtube",    "label": "YouTube" },
+        { "value": "multi",      "label": "Multi-platform" }
+      ]
+    },
+    { "type": "dropdown", "name": "content_type", "label": "Content Type",            "required": true, "width": "half",
+      "options": [
+        { "value": "feed_post",   "label": "Feed Post" },
+        { "value": "story",       "label": "Story / Reel" },
+        { "value": "carousel",    "label": "Carousel" },
+        { "value": "cover",       "label": "Cover / Banner" },
+        { "value": "other",       "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",     "label": "Priority",                "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "date",     "name": "post_date",    "label": "Planned Post Date",       "required": true,  "width": "half" },
+    { "type": "number",   "name": "slides",       "label": "Number of Slides / Frames","required": false, "width": "half", "min": 1, "max": 20, "default": 1 },
+    { "type": "url",      "name": "reference_url","label": "Reference / Mood Board",  "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "textarea", "name": "caption_draft","label": "Caption Draft",           "placeholder": "Paste draft caption here (optional)...", "required": false, "width": "full", "rows": 3 },
+    { "type": "textarea", "name": "hashtags",     "label": "Hashtags / Keywords",     "placeholder": "#brand #marketing ...", "required": false, "width": "full", "rows": 2 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add Platform Variant",
+    "fields": [
+      { "type": "input",    "name": "child_title",    "label": "Variant Title",    "required": true,  "width": "full" },
+      { "type": "dropdown", "name": "child_platform", "label": "Platform",         "required": true,  "width": "half",
+        "options": [
+          { "value": "instagram", "label": "Instagram" },
+          { "value": "facebook",  "label": "Facebook" },
+          { "value": "linkedin",  "label": "LinkedIn" },
+          { "value": "tiktok",    "label": "TikTok" }
+        ]
+      },
+      { "type": "input",    "name": "child_size",     "label": "Dimensions",       "required": false, "width": "half" },
+      { "type": "textarea", "name": "child_notes",    "label": "Notes",             "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}

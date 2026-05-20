@@ -1,0 +1,51 @@
+{
+  "id": "video-animation",
+  "name": "Video & Animation",
+  "fields": [
+    { "type": "input",    "name": "title",        "label": "Project Title",           "placeholder": "e.g. Product Demo Video", "required": true, "width": "full" },
+    { "type": "textarea", "name": "description",  "label": "Project Brief",           "placeholder": "Describe the video concept...", "required": true, "width": "full", "rows": 4 },
+    { "type": "dropdown", "name": "video_type",   "label": "Video Type",              "required": true, "width": "half",
+      "options": [
+        { "value": "explainer",    "label": "Explainer Video" },
+        { "value": "product_demo", "label": "Product Demo" },
+        { "value": "testimonial",  "label": "Testimonial" },
+        { "value": "social_clip",  "label": "Social Media Clip" },
+        { "value": "animation",    "label": "Animation / Motion" },
+        { "value": "corporate",    "label": "Corporate Video" },
+        { "value": "other",        "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",     "label": "Priority",                "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "input",    "name": "duration",     "label": "Target Duration",         "placeholder": "e.g. 30s, 1-2 min", "required": false, "width": "half" },
+    { "type": "dropdown", "name": "aspect_ratio", "label": "Aspect Ratio",            "required": false, "width": "half",
+      "options": [
+        { "value": "16_9",  "label": "16:9 (Landscape)" },
+        { "value": "9_16",  "label": "9:16 (Portrait / Stories)" },
+        { "value": "1_1",   "label": "1:1 (Square)" },
+        { "value": "4_5",   "label": "4:5 (Instagram)" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    { "type": "date",     "name": "deadline",     "label": "Deadline",                "required": true,  "width": "half" },
+    { "type": "url",      "name": "script_url",   "label": "Script / Storyboard Link","placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "url",      "name": "reference_url","label": "Reference Video Link",    "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "textarea", "name": "voiceover",    "label": "Voiceover / Audio Notes", "placeholder": "Language, tone, music style...", "required": false, "width": "full", "rows": 3 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add Scene / Version",
+    "fields": [
+      { "type": "input",    "name": "child_title",    "label": "Scene / Version Title","required": true,  "width": "full" },
+      { "type": "input",    "name": "child_duration", "label": "Duration",             "required": false, "width": "half" },
+      { "type": "date",     "name": "child_due",      "label": "Due Date",             "required": false, "width": "half" },
+      { "type": "textarea", "name": "child_notes",    "label": "Notes",                "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}
