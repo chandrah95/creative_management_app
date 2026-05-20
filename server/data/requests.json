@@ -1,32 +1,92 @@
 [
   {
     "id": "a981a4de-bac4-494d-895f-c12b21a60e06",
-    "status": "pending",
+    "ticketId": "SMXC-01",
+    "status": "need_revision",
+    "assignedTo": {
+      "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+      "name": "Designer One",
+      "email": "designer1@company.com"
+    },
+    "comments": [],
+    "statusHistory": [
+      {
+        "from": null,
+        "to": "requested",
+        "changedAt": "2026-05-20T07:50:06.716Z",
+        "changedBy": {
+          "id": "aadf0332-ed50-44e6-b79d-70d7fc40cc4c",
+          "name": "Admin",
+          "role": "admin"
+        }
+      },
+      {
+        "from": "requested",
+        "to": "in_progress",
+        "changedAt": "2026-05-20T17:04:55.756Z",
+        "changedBy": {
+          "id": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8",
+          "name": "Andhika",
+          "role": "creative_lead"
+        }
+      },
+      {
+        "from": "in_progress",
+        "to": "need_revision",
+        "changedAt": "2026-05-20T17:04:59.487Z",
+        "changedBy": {
+          "id": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8",
+          "name": "Andhika",
+          "role": "creative_lead"
+        }
+      }
+    ],
     "submittedAt": "2026-05-20T07:50:06.716Z",
-    "project": "brand-identity",
+    "updatedAt": "2026-05-20T17:23:45.468Z",
+    "project": "smxc",
     "fields": {
       "title": "Fasti Campaign",
       "description": "This campaign will create a huge movement on campaign",
-      "asset_type": "brand_guide",
+      "platform": "instagram",
+      "content_type": "feed_post",
       "priority": "low",
       "deadline": "2026-05-21",
       "revisions": 3,
-      "reference_url": "https://www.google.com/search?q=vite&oq=vite&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIKCAEQABixAxiABDINCAIQABiDARixAxiABDIKCAMQABixAxiABDIKCAQQABixAxiABDIHCAUQLhiABDIKCAYQABixAxiABDIQCAcQABiDARixAxiABBiKBTIHCAgQABiABDIQCAkQLhjHARixAxjRAxiABNIBCDIwMTNqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8",
-      "file_format": "PNG",
+      "reference_url": "https://www.google.com",
       "notes": "Tolong Segera"
     },
     "childIssues": [
       {
+        "id": "ci-001",
+        "ticketId": "SMXC-01-01",
         "child_title": "Homepage Banner",
-        "child_type": "design",
+        "child_type": "instagram",
         "child_due": "2026-05-22",
-        "child_notes": ""
+        "child_notes": "",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-20T07:50:06.716Z"
+          }
+        ]
       },
       {
+        "id": "ci-002",
+        "ticketId": "SMXC-01-02",
         "child_title": "Category Tile",
-        "child_type": "design",
+        "child_type": "instagram",
         "child_due": "2026-05-20",
-        "child_notes": "Yang ini buru buru"
+        "child_notes": "Yang ini buru buru",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-20T07:50:06.716Z"
+          }
+        ]
       }
     ],
     "submittedBy": {

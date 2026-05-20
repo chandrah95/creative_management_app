@@ -1,0 +1,44 @@
+{
+  "id": "pac",
+  "name": "Packaging",
+  "fields": [
+    { "type": "input",    "name": "title",           "label": "Request Title",         "placeholder": "e.g. New SKU Packaging Design", "required": true,  "width": "full" },
+    { "type": "textarea", "name": "description",     "label": "Brief",                 "placeholder": "Describe packaging requirements, story, and key info to display", "required": true, "width": "full", "rows": 4 },
+    { "type": "input",    "name": "product_name",    "label": "Product Name / SKU",    "placeholder": "e.g. Natura Body Lotion 250ml", "required": true,  "width": "half" },
+    { "type": "dropdown", "name": "packaging_type",  "label": "Packaging Type",        "required": true, "width": "half",
+      "options": [
+        { "value": "box",       "label": "Box / Carton" },
+        { "value": "pouch",     "label": "Pouch / Sachet" },
+        { "value": "bottle",    "label": "Bottle Label" },
+        { "value": "tube",      "label": "Tube" },
+        { "value": "can",       "label": "Can / Tin" },
+        { "value": "wrapper",   "label": "Wrapper" },
+        { "value": "other",     "label": "Other" }
+      ]
+    },
+    { "type": "dropdown", "name": "priority",        "label": "Priority",              "required": true, "width": "half",
+      "options": [
+        { "value": "low",      "label": "Low" },
+        { "value": "medium",   "label": "Medium" },
+        { "value": "high",     "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    { "type": "date",     "name": "deadline",        "label": "Deadline",              "required": true,  "width": "half" },
+    { "type": "input",    "name": "dimensions",      "label": "Dieline Dimensions",    "placeholder": "e.g. 100x50x30 mm",            "required": false, "width": "half" },
+    { "type": "number",   "name": "revisions",       "label": "Max Revisions",         "required": false, "width": "half", "min": 1, "max": 10, "default": 3 },
+    { "type": "url",      "name": "reference_url",   "label": "Reference / Dieline",   "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "textarea", "name": "regulatory_info", "label": "Regulatory / Legal Info","placeholder": "List any mandatory text, certifications, or barcodes...", "required": false, "width": "full", "rows": 3 },
+    { "type": "textarea", "name": "notes",           "label": "Additional Notes",      "required": false, "width": "full", "rows": 2 }
+  ],
+  "childIssue": {
+    "enabled": true,
+    "label": "Add SKU Variant",
+    "fields": [
+      { "type": "input",    "name": "child_title",   "label": "SKU / Variant Name", "placeholder": "e.g. 100ml variant", "required": true,  "width": "full" },
+      { "type": "input",    "name": "child_type",    "label": "Dimensions",         "placeholder": "e.g. 80x40x25mm",   "required": false, "width": "half" },
+      { "type": "date",     "name": "child_due",     "label": "Due Date",                                               "required": false, "width": "half" },
+      { "type": "textarea", "name": "child_notes",   "label": "Notes",                                                  "required": false, "width": "full", "rows": 2 }
+    ]
+  }
+}

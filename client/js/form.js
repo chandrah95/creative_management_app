@@ -52,7 +52,7 @@ function renderProjectPicker(list) {
     <div class="project-card" onclick="window.location.href='/form?project=${p.id}'">
       <div class="project-card-icon">${p.icon}</div>
       <div class="project-card-name">${p.name}</div>
-      <div class="project-card-key" style="color:${p.color}">${p.jiraProject}</div>
+      <div class="project-card-key" style="color:${p.color}">${p.code || p.jiraProject || ''}</div>
     </div>
   `).join('');
 }

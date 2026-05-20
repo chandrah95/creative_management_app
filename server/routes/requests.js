@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { list, get, create, update } = require('../controllers/requestController');
+const { list, get, create, update, postComment, updateChild, getTeamMembers } = require('../controllers/requestController');
 const { authenticate } = require('../middleware/authenticate');
 
 router.use(authenticate);
+
+router.get('/team-members', getTeamMembers);
 router.get('/', list);
 router.get('/:id', get);
 router.post('/', create);
 router.put('/:id', update);
+router.post('/:id/comments', postComment);
+router.put('/:id/children/:childId', updateChild);
 
 module.exports = router;

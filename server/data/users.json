@@ -4,6 +4,65 @@
     "email": "admin@company.com",
     "password": "$2a$10$1nvL25r5yFjCTw4EK9O/BeNjC/7YoIgq9.OyEkr/aMRuEqFPkbLQm",
     "name": "Admin",
-    "role": "admin"
+    "role": "admin",
+    "projects": ["ebxc","plxc","smxc","daxc","ocsp","pac"],
+    "department": "Administration"
+  },
+  {
+    "id": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8",
+    "email": "andhika@company.com",
+    "password": "$2a$10$CZRYdxIEBrgPkoDy6B0uR.IOZTNFjFZ4bt54lkQD9JXqYrxnvmFXa",
+    "name": "Andhika",
+    "role": "creative_lead",
+    "projects": ["smxc","daxc"],
+    "department": "Social Media & Digital Ads"
+  },
+  {
+    "id": "fc741447-80b5-4f3c-b31c-58663669868f",
+    "email": "andhika.zefanya@astronauts.id",
+    "password": "$2a$10$3r5DuWPYGIdlikHUYYnXXunA7/Qv1PT/6I7rJcbU3As7uIFqJKksm",
+    "name": "Andhika Zefanya",
+    "role": "creative_lead",
+    "projects": ["smxc","daxc"],
+    "department": "Social Media & Digital Ads"
+  },
+  {
+    "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+    "email": "designer1@company.com",
+    "password": "$2a$10$5aYRON6MQaCjiQ1IxNuR3OblXnRrdByIIDPQavoUFMRd1cvh7uuy6",
+    "name": "Designer One",
+    "role": "creative_designer",
+    "projects": ["smxc","daxc"],
+    "department": "Social Media & Digital Ads",
+    "leadId": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8"
+  },
+  {
+    "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+    "email": "designer2@company.com",
+    "password": "$2a$10$Wq3wP9wX/L20kmJuxgoWIeiG5443MtmNUemETuZamBORMX5bhngsW",
+    "name": "Designer Two",
+    "role": "creative_designer",
+    "projects": ["smxc","daxc"],
+    "department": "Social Media & Digital Ads",
+    "leadId": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8"
+  },
+  {
+    "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+    "email": "chandra.hermawan@astronauts.id",
+    "password": "$2a$10$aU5nrWnMueiSdF3ROowOauDQb4YQ3hxHhrTuqXs3mkSbR0OyzvzhC",
+    "name": "Chandra Hermawan",
+    "role": "creative_designer",
+    "projects": ["smxc","daxc"],
+    "department": "Social Media & Digital Ads",
+    "leadId": "fc741447-80b5-4f3c-b31c-58663669868f"
+  },
+  {
+    "id": "e186bcca-83b0-46e9-a463-d8ca8dc42763",
+    "email": "requester@company.com",
+    "password": "$2a$10$2qxwzuYDShllMELI.1yPu.eIykWaK9yjbwYETd0LKbcfe2u3ohRCG",
+    "name": "Requester One",
+    "role": "requester",
+    "projects": [],
+    "department": ""
   }
 ]

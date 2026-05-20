@@ -106,5 +106,16 @@
 
   <script type="module" src="/js/api.js"></script>
   <script type="module" src="/js/form.js"></script>
+  <script>
+    // Only requesters and admins can submit new requests
+    (function guardRole() {
+      const raw = localStorage.getItem('crp_user') || sessionStorage.getItem('crp_user');
+      if (!raw) return;
+      const u = JSON.parse(raw);
+      if (u.role === 'creative_designer' || u.role === 'creative_lead') {
+        window.location.href = '/dashboard';
+      }
+    })();
+  </script>
 </body>
 </html>
