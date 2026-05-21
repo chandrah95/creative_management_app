@@ -50,9 +50,9 @@ function checkAccess(user, request) {
   if (user.role === 'creative_designer') return request.assignedTo?.id === user.id;
   if (user.role === 'requester')         return request.submittedBy?.id === user.id;
   if (user.role === 'creative_lead') {
-    // Re-fetch from DB — single source of truth, immune to stale tokens
     const dbUser   = findUserById(user.id);
-    const projects = dbUser?.projects?.length ? dbUser.projects : (user.projects || []);
+    const projects = (dbUser?.projects?.length ? dbUser.projects : (user.projects || []))
+      .filter(p => p !== 'studio'); // 'studio' is a view filter, not a real project ID
     return projects.length > 0 && projects.includes(request.project);
   }
   return false;
@@ -128,12 +128,13 @@ function postComment(req, res) {
   if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
   if (!checkAccess(user, request)) return res.status(403).json({ success: false, error: 'Access denied' });
 
-  const { text } = req.body;
-  if (!text?.trim()) return res.status(400).json({ success: false, error: 'Comment text is required' });
+  const { text, imageData } = req.body;
+  if (!text?.trim() && !imageData) return res.status(400).json({ success: false, error: 'Comment text or image is required' });
 
   const updated = addComment(req.params.id, {
-    text: text.trim(),
-    postedBy: { id: user.id, name: user.name, email: user.email, role: user.role }
+    text:      text?.trim() || '',
+    imageData: imageData    || null,
+    postedBy:  { id: user.id, name: user.name, email: user.email, role: user.role }
   });
   res.json({ success: true, data: updated });
 }
@@ -144,6 +145,11 @@ function updateChild(req, res) {
   if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
   if (!checkAccess(user, request)) return res.status(403).json({ success: false, error: 'Access denied' });
   if (user.role === 'requester') return res.status(403).json({ success: false, error: 'Access denied' });
+
+  // Only leads and admins can assign sub-tasks
+  if (req.body.assignedTo !== undefined && user.role !== 'creative_lead' && user.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Only creative leads can assign sub-tasks' });
+  }
 
   const changedBy = req.body.status ? actorOf(user) : null;
   const updated   = updateChildIssue(req.params.id, req.params.childId, req.body, changedBy);

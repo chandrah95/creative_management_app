@@ -5,6 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Creative Hub — Register</title>
   <link rel="stylesheet" href="/css/main.css" />
+  <style>
+    /* ── Scope picker ── */
+    .scope-options { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .scope-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .scope-card:hover { border-color: var(--primary); }
+    .scope-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .scope-check {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: transparent; flex-shrink: 0;
+      transition: all .15s;
+    }
+    .scope-card.selected .scope-check {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .scope-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .scope-card-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .scope-card-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  </style>
 </head>
 <body class="auth-page">
 
@@ -48,15 +85,21 @@
         </div>
       </div>
 
-      <!-- Shown only when creative_designer is selected -->
+      <!-- Shown when creative_designer is selected -->
       <div class="form-group" id="leadPickerGroup" style="display:none">
-        <label for="leadId">Your Creative Lead</label>
+        <label for="leadId">Your Creative Lead <span class="required">*</span></label>
         <div class="select-wrapper">
-          <select id="leadId" name="leadId" class="auth-select">
-            <option value="">— Loading leads… —</option>
+          <select id="leadId" name="leadId" class="auth-select" onchange="onLeadChange(this.value)">
+            <option value="">— Select your Creative Lead —</option>
           </select>
         </div>
-        <span class="field-hint">Your account will be added to this lead's team and inherit their project access.</span>
+      </div>
+
+      <!-- Shown after a lead is selected -->
+      <div class="form-group" id="scopePickerGroup" style="display:none">
+        <label>Scope <span class="required">*</span></label>
+        <span class="field-hint">Select the project area(s) you'll be working on. Multiple selection allowed.</span>
+        <div id="scopeOptions" class="scope-options"></div>
       </div>
 
       <div id="register-error" class="alert alert-error" style="display:none"></div>
@@ -76,15 +119,45 @@
 
     let leadsCache = null;
 
+    // Map scope group names → project IDs
+    const SCOPE_PROJECTS = {
+      'In App':    ['ebxc', 'plxc'],
+      'Out App 1': ['smxc', 'daxc'],
+      'Out App 2': ['ocsp', 'pac'],
+      'Studio':    ['studio']
+    };
+
+    // Visual metadata per scope
+    const SCOPE_META = {
+      'In App':    { desc: 'Existing Buyer (EBXC) · Private Label (PLXC)',           color: '#6366f1' },
+      'Out App 1': { desc: 'Social Media (SMXC) · Digital Ads (DAXC)',               color: '#10b981' },
+      'Out App 2': { desc: 'Offline Collateral (OCSP) · Packaging (PAC)',            color: '#ef4444' },
+      'Studio':    { desc: 'Studio Team — physical production support',               color: '#ec4899' }
+    };
+
+    // Which scope groups does this lead own?
+    function getLeadGroups(lead) {
+      return Object.entries(SCOPE_PROJECTS)
+        .filter(([, ps]) => ps.some(p => (lead.projects || []).includes(p)))
+        .map(([g]) => g);
+    }
+
     function togglePassword() {
       const input = document.getElementById('password');
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
     async function onRoleChange(role) {
-      const group = document.getElementById('leadPickerGroup');
-      if (role !== 'creative_designer') { group.style.display = 'none'; return; }
-      group.style.display = 'block';
+      const leadGroup  = document.getElementById('leadPickerGroup');
+      const scopeGroup = document.getElementById('scopePickerGroup');
+
+      if (role !== 'creative_designer') {
+        leadGroup.style.display  = 'none';
+        scopeGroup.style.display = 'none';
+        return;
+      }
+
+      leadGroup.style.display = 'block';
 
       if (leadsCache) return; // already fetched
       const sel = document.getElementById('leadId');
@@ -98,6 +171,49 @@
       } catch {
         sel.innerHTML = '<option value="">— Failed to load leads —</option>';
       }
+    }
+
+    function onLeadChange(leadId) {
+      const scopeGroup   = document.getElementById('scopePickerGroup');
+      const scopeOptions = document.getElementById('scopeOptions');
+
+      if (!leadId || !leadsCache) { scopeGroup.style.display = 'none'; return; }
+
+      const lead   = leadsCache.find(l => l.id === leadId);
+      const groups = lead ? getLeadGroups(lead) : [];
+
+      if (!groups.length) { scopeGroup.style.display = 'none'; return; }
+
+      scopeOptions.innerHTML = groups.map(g => {
+        const meta = SCOPE_META[g] || {};
+        return `<div class="scope-card" onclick="toggleScopeCard(this)" data-scope="${g}">
+          <div class="scope-check">✓</div>
+          <span class="scope-dot" style="background:${meta.color}"></span>
+          <input type="hidden" name="scope" value="${g}" disabled>
+          <div>
+            <div class="scope-card-name">${g}</div>
+            <div class="scope-card-desc">${meta.desc || ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      scopeGroup.style.display = 'block';
+    }
+
+    function toggleScopeCard(card) {
+      const isSelected = card.classList.toggle('selected');
+      card.querySelector('input[name="scope"]').disabled = !isSelected;
+    }
+
+    function getSelectedScopes() {
+      return [...document.querySelectorAll('.scope-card.selected')]
+        .map(card => card.dataset.scope);
+    }
+
+    function resetBtn() {
+      document.getElementById('registerBtnText').style.display = 'inline';
+      document.getElementById('registerBtnLoader').style.display = 'none';
+      document.getElementById('registerBtn').disabled = false;
     }
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -114,11 +230,30 @@
       document.getElementById('registerBtnLoader').style.display = 'inline-block';
       document.getElementById('registerBtn').disabled = true;
 
+      // Validate designer-specific fields
+      if (role === 'creative_designer') {
+        if (!leadId) {
+          errBox.textContent = 'Please select your Creative Lead.';
+          errBox.style.display = 'block';
+          resetBtn();
+          return;
+        }
+        const scopes = getSelectedScopes();
+        if (!scopes.length) {
+          errBox.textContent = 'Please select at least one scope.';
+          errBox.style.display = 'block';
+          resetBtn();
+          return;
+        }
+      }
+
+      const scopes = role === 'creative_designer' ? getSelectedScopes() : [];
+
       try {
         const res  = await fetch('/api/auth/register', {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password, role, leadId })
+          body:    JSON.stringify({ name, email, password, role, leadId, scopes })
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
@@ -129,9 +264,7 @@
       } catch (err) {
         errBox.textContent = err.message || 'Registration failed. Please try again.';
         errBox.style.display = 'block';
-        document.getElementById('registerBtnText').style.display = 'inline';
-        document.getElementById('registerBtnLoader').style.display = 'none';
-        document.getElementById('registerBtn').disabled = false;
+        resetBtn();
       }
     });
   </script>

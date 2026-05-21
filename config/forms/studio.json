@@ -1,0 +1,8 @@
+{
+  "id": "studio",
+  "name": "Studio",
+  "isStudio": true,
+  "requestable": false,
+  "fields": [],
+  "childIssue": { "enabled": false }
+}

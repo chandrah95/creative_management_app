@@ -37,24 +37,29 @@ async function loadProjects() {
 function renderProjectNav(list) {
   const nav = document.getElementById('projectNav');
   const current = new URLSearchParams(window.location.search).get('project');
-  nav.innerHTML = list.map(p => `
-    <a class="project-nav-item ${p.id === current ? 'active' : ''}" href="/form?project=${p.id}">
-      <span class="project-nav-dot" style="background:${p.color}"></span>
-      <span class="project-nav-label">${p.name}</span>
-    </a>
-  `).join('');
+  nav.innerHTML = list
+    .filter(p => !p.isStudio)
+    .map(p => `
+      <a class="project-nav-item ${p.id === current ? 'active' : ''}" href="/form?project=${p.id}">
+        <span class="project-nav-dot" style="background:${p.color}"></span>
+        <span class="project-nav-label">${p.name}</span>
+      </a>
+    `).join('');
 }
 
 function renderProjectPicker(list) {
   const grid = document.getElementById('projectPickerGrid');
   if (!grid) return;
-  grid.innerHTML = list.map(p => `
-    <div class="project-card" onclick="window.location.href='/form?project=${p.id}'">
-      <div class="project-card-icon">${p.icon}</div>
-      <div class="project-card-name">${p.name}</div>
-      <div class="project-card-key" style="color:${p.color}">${p.code || p.jiraProject || ''}</div>
-    </div>
-  `).join('');
+  // Studio is a virtual aggregation project — requesters cannot submit to it directly
+  grid.innerHTML = list
+    .filter(p => !p.isStudio)
+    .map(p => `
+      <div class="project-card" onclick="window.location.href='/form?project=${p.id}'">
+        <div class="project-card-icon">${p.icon}</div>
+        <div class="project-card-name">${p.name}</div>
+        <div class="project-card-key" style="color:${p.color}">${p.code || p.jiraProject || ''}</div>
+      </div>
+    `).join('');
 }
 
 async function loadForm(projectId) {

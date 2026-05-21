@@ -25,39 +25,61 @@ function seedDefaultUsers() {
   let users   = readJson(USERS_FILE);
   let updated = false;
 
+  // Remove any stale seed account with old project-format IDs that may have been injected
+  const staleEmails = ['andhika@company.com'];
+  const before = users.length;
+  users = users.filter(u => {
+    if (!staleEmails.includes(u.email)) return true;
+    // Keep the account only if it uses current project IDs (not old form-template IDs)
+    const oldIds = ['social-media','digital-marketing','print-offline','brand-identity','video-animation','web-ui-design'];
+    const hasOldIds = (u.projects || []).some(p => oldIds.includes(p));
+    return !hasOldIds;
+  });
+  if (users.length !== before) updated = true;
+
+  // Ensure admin has the correct project list
   const admin = users.find(u => u.role === 'admin');
-  if (admin && !admin.projects) {
-    admin.projects   = ['brand-identity','digital-marketing','social-media','video-animation','print-offline','web-ui-design'];
-    admin.department = 'Administration';
-    updated = true;
-  }
-
-  const seeds = [
-    { email:'andhika@company.com',    password:'Lead123!',    name:'Andhika',       role:'creative_lead',     projects:['social-media','digital-marketing'], department:'Social Media & Digital Marketing' },
-    { email:'designer1@company.com',  password:'Design123!',  name:'Designer One',  role:'creative_designer', projects:['social-media','digital-marketing'], department:'Social Media & Digital Marketing' },
-    { email:'designer2@company.com',  password:'Design123!',  name:'Designer Two',  role:'creative_designer', projects:['social-media','digital-marketing'], department:'Social Media & Digital Marketing' },
-    { email:'requester@company.com',  password:'Request123!', name:'Requester One', role:'requester',         projects:[], department:'' }
-  ];
-
-  for (const seed of seeds) {
-    if (!users.find(u => u.email === seed.email)) {
-      const hash = bcrypt.hashSync(seed.password, 10);
-      users.push({ id: uuidv4(), email: seed.email, password: hash, name: seed.name, role: seed.role, projects: seed.projects, department: seed.department });
+  if (admin) {
+    const currentIds = ['ebxc','plxc','smxc','daxc','ocsp','pac','studio'];
+    const needsUpdate = !admin.projects?.length || admin.projects.some(p => !currentIds.includes(p));
+    if (needsUpdate) {
+      admin.projects   = currentIds;
+      admin.department = 'Administration';
       updated = true;
     }
   }
 
-  const lead = users.find(u => u.email === 'andhika@company.com');
-  if (lead) {
+  // Core accounts — plain-text passwords for dev, only added if missing
+  const seeds = [
+    { email:'andhika.zefanya@astronauts.id', password:'lead123',    name:'Andhika Zefanya', role:'creative_lead',     projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
+    { email:'vellindia@company.com',          password:'lead123',    name:'Vellindia',       role:'creative_lead',     projects:['ocsp','pac'],                         department:'Out App 2' },
+    { email:'designer1@company.com',          password:'design123',  name:'Designer One',    role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
+    { email:'designer2@company.com',          password:'design123',  name:'Designer Two',    role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
+    { email:'chandra.hermawan@astronauts.id', password:'design123',  name:'Chandra Hermawan',role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
+    { email:'requester@company.com',          password:'request123', name:'Requester One',   role:'requester',         projects:[], department:'' },
+    { email:'requester2@company.com',         password:'request123', name:'Requester Two',   role:'requester',         projects:[], department:'' }
+  ];
+
+  for (const seed of seeds) {
+    if (!users.find(u => u.email === seed.email)) {
+      users.push({ id: uuidv4(), ...seed });
+      updated = true;
+    }
+  }
+
+  // Link designers to Andhika Zefanya if they have no lead yet
+  const azLead = users.find(u => u.email === 'andhika.zefanya@astronauts.id');
+  if (azLead) {
+    const azDesignerEmails = ['designer1@company.com','designer2@company.com','chandra.hermawan@astronauts.id'];
     for (const u of users) {
-      if (u.role === 'creative_designer' && u.projects?.includes('social-media') && !u.leadId) {
-        u.leadId = lead.id;
+      if (u.role === 'creative_designer' && azDesignerEmails.includes(u.email) && !u.leadId) {
+        u.leadId = azLead.id;
         updated  = true;
       }
     }
   }
 
-  if (updated) { writeJson(USERS_FILE, users); console.log('Seed users initialised'); }
+  if (updated) { writeJson(USERS_FILE, users); console.log('[seed] Users initialised/cleaned'); }
 }
 
 // ── Users ───────────────────────────────────────────────────────────────────
@@ -111,15 +133,31 @@ function makeChildTicketId(parentId, childIndex) {
 function getAllRequests(filters = {}) {
   let list = readJson(REQUESTS_FILE);
 
-  if (filters.project)    list = list.filter(r => r.project === filters.project);
+  // Single-project filter ('studio' is a virtual project — match tickets with studio child issues)
+  if (filters.project) {
+    if (filters.project === 'studio') {
+      list = list.filter(r => r.childIssues?.some(c => c.is_need_studio === true));
+    } else {
+      list = list.filter(r => r.project === filters.project);
+    }
+  }
+
   if (filters.status)     list = list.filter(r => r.status  === filters.status);
-  if (filters.assignedTo) list = list.filter(r => r.assignedTo?.id === filters.assignedTo);
+  if (filters.assignedTo) list = list.filter(r =>
+    r.assignedTo?.id === filters.assignedTo ||
+    (r.childIssues || []).some(c => c.assignedTo?.id === filters.assignedTo)
+  );
   if (filters.submittedBy)list = list.filter(r => r.submittedBy?.id === filters.submittedBy);
 
-  // projects filter: undefined = no restriction; [] = no projects assigned = return nothing
+  // projects (plural) filter for creative leads
+  // 'studio' is a client-side view-filter on the lead's own pool — it never
+  // grants access to tickets outside the lead's regular projects.
   if (filters.projects !== undefined) {
-    if (!filters.projects.length) return [];
-    list = list.filter(r => filters.projects.includes(r.project));
+    const regularProjects = filters.projects.filter(p => p !== 'studio');
+
+    if (!regularProjects.length) return [];
+
+    list = list.filter(r => regularProjects.includes(r.project));
   }
 
   if (!filters.includeApproved) list = list.filter(r => r.status !== 'approved');
@@ -190,12 +228,14 @@ function addComment(requestId, comment) {
   const idx      = requests.findIndex(r => r.id === requestId);
   if (idx === -1) return null;
   if (!requests[idx].comments) requests[idx].comments = [];
-  requests[idx].comments.push({
+  const commentObj = {
     id:       uuidv4(),
     text:     comment.text,
     postedAt: new Date().toISOString(),
     postedBy: comment.postedBy
-  });
+  };
+  if (comment.imageData) commentObj.imageData = comment.imageData;
+  requests[idx].comments.push(commentObj);
   requests[idx].updatedAt = new Date().toISOString();
   writeJson(REQUESTS_FILE, requests);
   return requests[idx];
@@ -222,20 +262,66 @@ function updateChildIssue(requestId, childId, updates, changedBy = null) {
     });
   }
 
-  // Auto-approve parent when all children are approved
-  if (ci.length > 0 && ci.every(c => c.status === 'approved') && requests[idx].status !== 'approved') {
-    if (!requests[idx].statusHistory) requests[idx].statusHistory = [];
-    requests[idx].statusHistory.push({
-      from: requests[idx].status, to: 'approved',
-      changedAt: new Date().toISOString(),
-      changedBy: { name: 'System (all sub-tasks approved)', role: 'system' }
-    });
-    requests[idx].status = 'approved';
+  // Recalculate parent story points from all child SPs after any child update
+  const hasAnySP = ci.some(c => c.storyPoints != null);
+  requests[idx].storyPoints = hasAnySP
+    ? ci.reduce((sum, c) => sum + (c.storyPoints || 0), 0)
+    : null;
+
+  // Re-derive parent assignedTo from child assignees:
+  // non-studio children take priority; most-frequent assignee among them wins.
+  // If all children are studio, the studio designer becomes the parent assignee.
+  const assignedChildren = ci.filter(c => c.assignedTo?.id);
+  if (assignedChildren.length > 0) {
+    const nonStudio = assignedChildren.filter(c => !c.is_need_studio);
+    const pool      = nonStudio.length > 0 ? nonStudio : assignedChildren;
+    const freq = {};
+    for (const c of pool) {
+      const k = c.assignedTo.id;
+      if (!freq[k]) freq[k] = { assignedTo: c.assignedTo, count: 0 };
+      freq[k].count++;
+    }
+    const winner = Object.values(freq).sort((a, b) => b.count - a.count)[0];
+    requests[idx].assignedTo = winner?.assignedTo || null;
+  } else {
+    requests[idx].assignedTo = null;
+  }
+
+  // Auto-set parent status = minimum (earliest workflow position) of all child statuses
+  if (ci.length > 0) {
+    const STATUS_RANK = {
+      requested: 0, in_progress: 1, on_review: 2,
+      need_revision: 3, revision: 4, revised: 5, approved: 6
+    };
+    const minStatus = ci.reduce((min, c) =>
+      (STATUS_RANK[c.status] ?? 99) < (STATUS_RANK[min] ?? 99) ? c.status : min,
+      ci[0].status
+    );
+    if (minStatus !== requests[idx].status) {
+      if (!requests[idx].statusHistory) requests[idx].statusHistory = [];
+      requests[idx].statusHistory.push({
+        from:      requests[idx].status,
+        to:        minStatus,
+        changedAt: new Date().toISOString(),
+        changedBy: { name: 'System (auto from sub-tasks)', role: 'system' }
+      });
+      requests[idx].status = minStatus;
+    }
   }
 
   requests[idx].updatedAt = new Date().toISOString();
   writeJson(REQUESTS_FILE, requests);
   return requests[idx];
+}
+
+function updateUser(userId, updates) {
+  const users = readJson(USERS_FILE);
+  const idx   = users.findIndex(u => u.id === userId);
+  if (idx === -1) return null;
+  users[idx] = { ...users[idx], ...updates };
+  writeJson(USERS_FILE, users);
+  const { password, ...safe } = users[idx];
+  return safe;
 }
 
 function getAllLeads() {
@@ -259,7 +345,7 @@ function updateUserLead(userId, newLeadId) {
 
 module.exports = {
   initStorage,
-  findUserByEmail, findUserById, getAllUsers, getAllLeads, createUser, updateUserLead,
+  findUserByEmail, findUserById, getAllUsers, getAllLeads, createUser, updateUserLead, updateUser,
   getAllRequests, getRequestById, createRequest, updateRequest,
   addComment, updateChildIssue
 };

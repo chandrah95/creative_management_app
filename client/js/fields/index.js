@@ -7,6 +7,7 @@ import DateField     from './DateField.js';
 import UrlField      from './UrlField.js';
 import DropdownField from './DropdownField.js';
 import NumberField   from './NumberField.js';
+import CheckboxField from './CheckboxField.js';
 
 const FIELDS = {
   input:    InputField,
@@ -14,7 +15,8 @@ const FIELDS = {
   date:     DateField,
   url:      UrlField,
   dropdown: DropdownField,
-  number:   NumberField
+  number:   NumberField,
+  checkbox: CheckboxField
 };
 
 export function getField(type) {

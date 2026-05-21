@@ -27,7 +27,11 @@ async function login(req, res) {
   const user = findUserByEmail(email.toLowerCase().trim());
   if (!user) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
-  const match = await bcrypt.compare(password, user.password);
+  // Support plain-text passwords (dev accounts) alongside bcrypt hashes
+  const isBcrypt = user.password.startsWith('$2a$') || user.password.startsWith('$2b$');
+  const match    = isBcrypt
+    ? await bcrypt.compare(password, user.password)
+    : password === user.password;
   if (!match) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
   const expiresIn = rememberMe ? EXPIRES_REMEMBER : EXPIRES_NORMAL;
@@ -53,13 +57,28 @@ async function register(req, res) {
   const hash     = await bcrypt.hash(password, 10);
   const userData = { email: email.toLowerCase().trim(), password: hash, name: name.trim(), role: userRole, projects: [], department: '' };
 
-  // If registering as designer and a leadId was provided, inherit the lead's projects/department
+  // Designer: assign to lead and restrict projects to selected scopes
   if (userRole === 'creative_designer' && req.body.leadId) {
     const lead = findUserById(req.body.leadId);
     if (lead && lead.role === 'creative_lead') {
+      const SCOPE_PROJECTS = {
+        'In App':    ['ebxc', 'plxc'],
+        'Out App 1': ['smxc', 'daxc'],
+        'Out App 2': ['ocsp', 'pac'],
+        'Studio':    ['studio']
+      };
+      const scopes      = Array.isArray(req.body.scopes) ? req.body.scopes : [];
+      const leadProjects = lead.projects || [];
+
+      // Map selected scopes → project IDs, then intersect with the lead's actual projects
+      const scopedProjects = scopes.length
+        ? scopes.flatMap(s => SCOPE_PROJECTS[s] || []).filter(p => leadProjects.includes(p))
+        : leadProjects;
+
       userData.leadId     = lead.id;
-      userData.projects   = lead.projects   || [];
-      userData.department = lead.department || '';
+      userData.projects   = scopedProjects;
+      userData.scopes     = scopes;
+      userData.department = scopes.length ? scopes.join(' & ') : (lead.department || '');
     }
   }
 
