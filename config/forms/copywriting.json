@@ -1,0 +1,8 @@
+{
+  "id": "copywriting",
+  "name": "Copywriting",
+  "isCopywriting": true,
+  "requestable": false,
+  "fields": [],
+  "childIssue": { "enabled": false }
+}

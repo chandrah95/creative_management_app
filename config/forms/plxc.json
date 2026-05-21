@@ -42,7 +42,8 @@
         ]
       },
       { "type": "date",     "name": "child_due",        "label": "Due Date",           "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_studio",  "label": "Needs Studio Team?", "required": false, "width": "half" },
+      { "type": "checkbox", "name": "is_need_studio",       "label": "Needs Studio Team?",       "required": false, "width": "half" },
+      { "type": "checkbox", "name": "is_need_copywriting",  "label": "Needs Copywriting?",       "required": false, "width": "half" },
       { "type": "textarea", "name": "child_notes",     "label": "Notes",              "required": false, "width": "full", "rows": 2 }
     ]
   }

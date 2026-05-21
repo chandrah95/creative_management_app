@@ -23,13 +23,12 @@
     "name": "Andhika Zefanya",
     "role": "creative_lead",
     "projects": [
-      "ebxc",
-      "plxc",
       "smxc",
       "daxc",
-      "studio"
+      "studio",
+      "copywriting"
     ],
-    "department": "In App & Out App 1 & Studio"
+    "department": "Out App 1 & Studio"
   },
   {
     "id": "2b5e260f-3bc7-4de8-bb9e-80b4553199f8",
@@ -38,10 +37,12 @@
     "name": "Vellindia",
     "role": "creative_lead",
     "projects": [
+      "ebxc",
+      "plxc",
       "ocsp",
       "pac"
     ],
-    "department": "Out App 2"
+    "department": "In App & Out App 2"
   },
   {
     "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
@@ -50,13 +51,13 @@
     "name": "Designer One",
     "role": "creative_designer",
     "projects": [
-      "ebxc",
-      "plxc",
       "smxc",
-      "daxc",
-      "studio"
+      "daxc"
     ],
-    "department": "In App & Out App 1 & Studio",
+    "department": "Out App 1",
+    "scopes": [
+      "Out App 1"
+    ],
     "leadId": "fc741447-80b5-4f3c-b31c-58663669868f"
   },
   {
@@ -66,13 +67,13 @@
     "name": "Designer Two",
     "role": "creative_designer",
     "projects": [
-      "ebxc",
-      "plxc",
       "smxc",
-      "daxc",
-      "studio"
+      "daxc"
     ],
-    "department": "In App & Out App 1 & Studio",
+    "department": "Out App 1",
+    "scopes": [
+      "Out App 1"
+    ],
     "leadId": "fc741447-80b5-4f3c-b31c-58663669868f"
   },
   {
@@ -82,13 +83,28 @@
     "name": "Chandra Hermawan",
     "role": "creative_designer",
     "projects": [
-      "ebxc",
-      "plxc",
       "smxc",
-      "daxc",
+      "daxc"
+    ],
+    "department": "Out App 1",
+    "scopes": [
+      "Out App 1"
+    ],
+    "leadId": "fc741447-80b5-4f3c-b31c-58663669868f"
+  },
+  {
+    "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+    "email": "sheren@astronauts.id",
+    "password": "design123",
+    "name": "Sheren",
+    "role": "creative_designer",
+    "projects": [
       "studio"
     ],
-    "department": "In App & Out App 1 & Studio",
+    "department": "Studio",
+    "scopes": [
+      "Studio"
+    ],
     "leadId": "fc741447-80b5-4f3c-b31c-58663669868f"
   },
   {
@@ -110,18 +126,15 @@
     "department": ""
   },
   {
-    "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+    "id": "af285835-36da-41be-8f84-c813b4dbeeeb",
     "projects": [
-      "studio"
+      "smxc",
+      "daxc"
     ],
-    "department": "Studio",
-    "email": "sheren@astronauts.id",
-    "password": "$2a$10$JltH1I.dCuidkRTDgODnMe/3BpEK.NyVfrECJOuU8ildPg43XzXu2",
-    "name": "Sheren",
-    "role": "creative_designer",
-    "leadId": "fc741447-80b5-4f3c-b31c-58663669868f",
-    "scopes": [
-      "Studio"
-    ]
+    "department": "",
+    "email": "maria@company.com",
+    "password": "$2a$10$NNX/atfxlOVOqP3Ra2GKIOch1bU7HVCug7/YD.lW0OgvdOTOR7tQK",
+    "name": "maria",
+    "role": "requester"
   }
 ]

@@ -51,13 +51,14 @@ function seedDefaultUsers() {
 
   // Core accounts — plain-text passwords for dev, only added if missing
   const seeds = [
-    { email:'andhika.zefanya@astronauts.id', password:'lead123',    name:'Andhika Zefanya', role:'creative_lead',     projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
-    { email:'vellindia@company.com',          password:'lead123',    name:'Vellindia',       role:'creative_lead',     projects:['ocsp','pac'],                         department:'Out App 2' },
-    { email:'designer1@company.com',          password:'design123',  name:'Designer One',    role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
-    { email:'designer2@company.com',          password:'design123',  name:'Designer Two',    role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
-    { email:'chandra.hermawan@astronauts.id', password:'design123',  name:'Chandra Hermawan',role:'creative_designer', projects:['ebxc','plxc','smxc','daxc','studio'], department:'In App & Out App 1 & Studio' },
-    { email:'requester@company.com',          password:'request123', name:'Requester One',   role:'requester',         projects:[], department:'' },
-    { email:'requester2@company.com',         password:'request123', name:'Requester Two',   role:'requester',         projects:[], department:'' }
+    { email:'andhika.zefanya@astronauts.id', password:'lead123',    name:'Andhika Zefanya',  role:'creative_lead',     projects:['smxc','daxc','studio','copywriting'], department:'Out App 1 & Studio' },
+    { email:'vellindia@company.com',          password:'lead123',    name:'Vellindia',         role:'creative_lead',     projects:['ebxc','plxc','ocsp','pac'],           department:'In App & Out App 2' },
+    { email:'designer1@company.com',          password:'design123',  name:'Designer One',      role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
+    { email:'designer2@company.com',          password:'design123',  name:'Designer Two',      role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
+    { email:'chandra.hermawan@astronauts.id', password:'design123',  name:'Chandra Hermawan',  role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
+    { email:'sheren@astronauts.id',           password:'design123',  name:'Sheren',            role:'creative_designer', projects:['studio'],                             department:'Studio',    scopes:['Studio'] },
+    { email:'requester@company.com',          password:'request123', name:'Requester One',     role:'requester',         projects:[], department:'' },
+    { email:'requester2@company.com',         password:'request123', name:'Requester Two',     role:'requester',         projects:[], department:'' }
   ];
 
   for (const seed of seeds) {
@@ -70,7 +71,7 @@ function seedDefaultUsers() {
   // Link designers to Andhika Zefanya if they have no lead yet
   const azLead = users.find(u => u.email === 'andhika.zefanya@astronauts.id');
   if (azLead) {
-    const azDesignerEmails = ['designer1@company.com','designer2@company.com','chandra.hermawan@astronauts.id'];
+    const azDesignerEmails = ['designer1@company.com','designer2@company.com','chandra.hermawan@astronauts.id','sheren@astronauts.id'];
     for (const u of users) {
       if (u.role === 'creative_designer' && azDesignerEmails.includes(u.email) && !u.leadId) {
         u.leadId = azLead.id;
@@ -131,12 +132,15 @@ function makeChildTicketId(parentId, childIndex) {
 // ── Requests ────────────────────────────────────────────────────────────────
 
 function getAllRequests(filters = {}) {
+  if (filters.emptyResult) return [];
   let list = readJson(REQUESTS_FILE);
 
-  // Single-project filter ('studio' is a virtual project — match tickets with studio child issues)
+  // Virtual projects: studio and copywriting match tickets by their child issue flags
   if (filters.project) {
     if (filters.project === 'studio') {
       list = list.filter(r => r.childIssues?.some(c => c.is_need_studio === true));
+    } else if (filters.project === 'copywriting') {
+      list = list.filter(r => r.childIssues?.some(c => c.is_need_copywriting === true));
     } else {
       list = list.filter(r => r.project === filters.project);
     }
@@ -148,12 +152,14 @@ function getAllRequests(filters = {}) {
     (r.childIssues || []).some(c => c.assignedTo?.id === filters.assignedTo)
   );
   if (filters.submittedBy)list = list.filter(r => r.submittedBy?.id === filters.submittedBy);
+  if (filters.requesterProjects?.length)
+    list = list.filter(r => filters.requesterProjects.includes(r.project));
 
   // projects (plural) filter for creative leads
   // 'studio' is a client-side view-filter on the lead's own pool — it never
   // grants access to tickets outside the lead's regular projects.
   if (filters.projects !== undefined) {
-    const regularProjects = filters.projects.filter(p => p !== 'studio');
+    const regularProjects = filters.projects.filter(p => p !== 'studio' && p !== 'copywriting');
 
     if (!regularProjects.length) return [];
 
@@ -268,13 +274,13 @@ function updateChildIssue(requestId, childId, updates, changedBy = null) {
     ? ci.reduce((sum, c) => sum + (c.storyPoints || 0), 0)
     : null;
 
-  // Re-derive parent assignedTo from child assignees:
-  // non-studio children take priority; most-frequent assignee among them wins.
-  // If all children are studio, the studio designer becomes the parent assignee.
+  // Re-derive parent assignedTo from child assignees.
+  // Priority: BAU (non-studio, non-copywriting) > copywriting > studio
   const assignedChildren = ci.filter(c => c.assignedTo?.id);
   if (assignedChildren.length > 0) {
-    const nonStudio = assignedChildren.filter(c => !c.is_need_studio);
-    const pool      = nonStudio.length > 0 ? nonStudio : assignedChildren;
+    const bau = assignedChildren.filter(c => !c.is_need_studio && !c.is_need_copywriting);
+    const cw  = assignedChildren.filter(c =>  c.is_need_copywriting && !c.is_need_studio);
+    const pool = bau.length > 0 ? bau : (cw.length > 0 ? cw : assignedChildren);
     const freq = {};
     for (const c of pool) {
       const k = c.assignedTo.id;
@@ -343,9 +349,56 @@ function updateUserLead(userId, newLeadId) {
   return safe;
 }
 
+// Auto-approve tickets/children that have been in on_review or revised for > 7 days
+function autoApproveStaleTickets() {
+  const requests  = readJson(REQUESTS_FILE);
+  const now       = new Date();
+  const THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const STATUS_RANK = {
+    requested:0, in_progress:1, on_review:2,
+    need_revision:3, revision:4, revised:5, approved:6
+  };
+  let changed = false;
+
+  for (const r of requests) {
+    const checkStale = (item) => {
+      if (!['on_review','revised'].includes(item.status)) return false;
+      const last = item.statusHistory?.[item.statusHistory.length - 1]?.changedAt;
+      return last && (now - new Date(last)) > THRESHOLD;
+    };
+    const doApprove = (item) => {
+      if (!item.statusHistory) item.statusHistory = [];
+      item.statusHistory.push({
+        from: item.status, to: 'approved',
+        changedAt: now.toISOString(),
+        changedBy: { name: 'System (7-day auto-approve)', role: 'system' }
+      });
+      item.status = 'approved';
+      changed = true;
+    };
+
+    if (r.childIssues?.length) {
+      r.childIssues.forEach(c => { if (checkStale(c)) doApprove(c); });
+      // Recalculate parent status from children minimum
+      const minStatus = r.childIssues.reduce((min, c) =>
+        (STATUS_RANK[c.status] ?? 99) < (STATUS_RANK[min] ?? 99) ? c.status : min,
+        r.childIssues[0].status
+      );
+      if (minStatus !== r.status) { r.status = minStatus; changed = true; }
+    } else {
+      if (checkStale(r)) doApprove(r);
+    }
+  }
+
+  if (changed) {
+    writeJson(REQUESTS_FILE, requests);
+    console.log('[auto-approve] Stale tickets processed');
+  }
+}
+
 module.exports = {
   initStorage,
   findUserByEmail, findUserById, getAllUsers, getAllLeads, createUser, updateUserLead, updateUser,
   getAllRequests, getRequestById, createRequest, updateRequest,
-  addComment, updateChildIssue
+  addComment, updateChildIssue, autoApproveStaleTickets
 };

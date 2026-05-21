@@ -2,12 +2,8 @@
   {
     "id": "a981a4de-bac4-494d-895f-c12b21a60e06",
     "ticketId": "SMXC-01",
-    "status": "need_revision",
-    "assignedTo": {
-      "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
-      "name": "Designer One",
-      "email": "designer1@company.com"
-    },
+    "status": "requested",
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -19,30 +15,9 @@
           "name": "Admin",
           "role": "admin"
         }
-      },
-      {
-        "from": "requested",
-        "to": "in_progress",
-        "changedAt": "2026-05-20T17:04:55.756Z",
-        "changedBy": {
-          "id": "fc741447-80b5-4f3c-b31c-58663669868f",
-          "name": "Andhika Zefanya",
-          "role": "creative_lead"
-        }
-      },
-      {
-        "from": "in_progress",
-        "to": "need_revision",
-        "changedAt": "2026-05-20T17:04:59.487Z",
-        "changedBy": {
-          "id": "fc741447-80b5-4f3c-b31c-58663669868f",
-          "name": "Andhika Zefanya",
-          "role": "creative_lead"
-        }
       }
     ],
     "submittedAt": "2026-05-20T07:50:06.716Z",
-    "updatedAt": "2026-05-21T05:44:44.392Z",
     "project": "smxc",
     "fields": {
       "title": "Fasti Campaign",
@@ -60,7 +35,7 @@
       "email": "admin@company.com",
       "name": "Admin"
     },
-    "storyPoints": 4,
+    "storyPoints": null,
     "childIssues": [
       {
         "id": "ci-001",
@@ -78,7 +53,8 @@
         "child_due": "2026-05-22",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 3
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "ci-002",
@@ -96,7 +72,8 @@
         "child_due": "2026-05-20",
         "is_need_studio": false,
         "child_notes": "Yang ini buru buru",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       }
     ]
   },
@@ -151,7 +128,9 @@
         "child_type": "email",
         "child_due": "2026-06-06",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb01c002-0000-4000-8000-000000000012",
@@ -168,7 +147,9 @@
         "child_type": "push",
         "child_due": "2026-06-07",
         "is_need_studio": true,
-        "child_notes": "Needs studio photography backdrop for this asset"
+        "child_notes": "Needs studio photography backdrop for this asset",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb01c003-0000-4000-8000-000000000013",
@@ -185,10 +166,12 @@
         "child_type": "banner",
         "child_due": "2026-06-08",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.667Z"
+    "storyPoints": null
   },
   {
     "id": "eb020002-0000-4000-8000-000000000002",
@@ -241,7 +224,9 @@
         "child_type": "banner",
         "child_due": "2026-06-11",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb02c002-0000-4000-8000-000000000022",
@@ -258,7 +243,9 @@
         "child_type": "email",
         "child_due": "2026-06-12",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb02c003-0000-4000-8000-000000000023",
@@ -275,10 +262,12 @@
         "child_type": "push",
         "child_due": "2026-06-13",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.699Z"
+    "storyPoints": null
   },
   {
     "id": "eb030003-0000-4000-8000-000000000003",
@@ -331,7 +320,9 @@
         "child_type": "banner",
         "child_due": "2026-05-26",
         "is_need_studio": true,
-        "child_notes": "Requires studio product shot with clean white background"
+        "child_notes": "Requires studio product shot with clean white background",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb03c002-0000-4000-8000-000000000032",
@@ -348,7 +339,9 @@
         "child_type": "banner",
         "child_due": "2026-05-27",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb03c003-0000-4000-8000-000000000033",
@@ -365,10 +358,12 @@
         "child_type": "banner",
         "child_due": "2026-05-28",
         "is_need_studio": true,
-        "child_notes": "Studio needed to photograph actual product bundle"
+        "child_notes": "Studio needed to photograph actual product bundle",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.634Z"
+    "storyPoints": null
   },
   {
     "id": "eb040004-0000-4000-8000-000000000004",
@@ -421,7 +416,9 @@
         "child_type": "email",
         "child_due": "2026-06-16",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb04c002-0000-4000-8000-000000000042",
@@ -438,7 +435,9 @@
         "child_type": "voucher",
         "child_due": "2026-06-17",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb04c003-0000-4000-8000-000000000043",
@@ -455,10 +454,12 @@
         "child_type": "banner",
         "child_due": "2026-06-18",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.726Z"
+    "storyPoints": null
   },
   {
     "id": "eb050005-0000-4000-8000-000000000005",
@@ -511,7 +512,9 @@
         "child_type": "email",
         "child_due": "2026-06-01",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb05c002-0000-4000-8000-000000000052",
@@ -528,7 +531,9 @@
         "child_type": "voucher",
         "child_due": "2026-06-02",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "eb05c003-0000-4000-8000-000000000053",
@@ -545,10 +550,12 @@
         "child_type": "push",
         "child_due": "2026-06-03",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.673Z"
+    "storyPoints": null
   },
   {
     "id": "pl010001-0000-4000-8000-100000000001",
@@ -602,7 +609,9 @@
         "child_type": "ai",
         "child_due": "2026-05-27",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl01c002-0000-4000-8000-100000000012",
@@ -619,7 +628,9 @@
         "child_type": "pdf",
         "child_due": "2026-05-28",
         "is_need_studio": true,
-        "child_notes": "Studio needed to photograph physical product swatches and color references"
+        "child_notes": "Studio needed to photograph physical product swatches and color references",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl01c003-0000-4000-8000-100000000013",
@@ -636,10 +647,12 @@
         "child_type": "pdf",
         "child_due": "2026-05-29",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.642Z"
+    "storyPoints": null
   },
   {
     "id": "pl020002-0000-4000-8000-100000000002",
@@ -693,7 +706,9 @@
         "child_type": "ai",
         "child_due": "2026-06-07",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl02c002-0000-4000-8000-100000000022",
@@ -710,7 +725,9 @@
         "child_type": "ai",
         "child_due": "2026-06-08",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl02c003-0000-4000-8000-100000000023",
@@ -727,10 +744,12 @@
         "child_type": "ai",
         "child_due": "2026-06-10",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.678Z"
+    "storyPoints": null
   },
   {
     "id": "pl030003-0000-4000-8000-100000000003",
@@ -784,7 +803,9 @@
         "child_type": "ai",
         "child_due": "2026-06-13",
         "is_need_studio": true,
-        "child_notes": "Studio shoot needed: real grain/seeds as background for brand photography"
+        "child_notes": "Studio shoot needed: real grain/seeds as background for brand photography",
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "pl03c002-0000-4000-8000-100000000032",
@@ -801,7 +822,9 @@
         "child_type": "ai",
         "child_due": "2026-06-14",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "pl03c003-0000-4000-8000-100000000033",
@@ -818,10 +841,12 @@
         "child_type": "pdf",
         "child_due": "2026-06-15",
         "is_need_studio": true,
-        "child_notes": "Studio product-on-tag photography needed for mockup visual"
+        "child_notes": "Studio product-on-tag photography needed for mockup visual",
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.704Z"
+    "storyPoints": null
   },
   {
     "id": "pl040004-0000-4000-8000-100000000004",
@@ -875,7 +900,9 @@
         "child_type": "ai",
         "child_due": "2026-06-20",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl04c002-0000-4000-8000-100000000042",
@@ -892,7 +919,9 @@
         "child_type": "ai",
         "child_due": "2026-06-21",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl04c003-0000-4000-8000-100000000043",
@@ -909,10 +938,12 @@
         "child_type": "ai",
         "child_due": "2026-06-22",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.731Z"
+    "storyPoints": null
   },
   {
     "id": "pl050005-0000-4000-8000-100000000005",
@@ -966,7 +997,9 @@
         "child_type": "pdf",
         "child_due": "2026-06-23",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl05c002-0000-4000-8000-100000000052",
@@ -983,7 +1016,9 @@
         "child_type": "ai",
         "child_due": "2026-06-24",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pl05c003-0000-4000-8000-100000000053",
@@ -1000,20 +1035,18 @@
         "child_type": "ai",
         "child_due": "2026-06-25",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.710Z"
+    "storyPoints": null
   },
   {
     "id": "sm020002-0000-4000-8000-200000000002",
     "ticketId": "SMXC-02",
     "status": "requested",
-    "assignedTo": {
-      "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
-      "name": "Designer One",
-      "email": "designer1@company.com"
-    },
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -1064,12 +1097,8 @@
         "child_due": "2026-05-24",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1,
-        "assignedTo": {
-          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
-          "name": "Designer One",
-          "email": "designer1@company.com"
-        }
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "sm02c002-0000-4000-8000-200000000022",
@@ -1087,12 +1116,8 @@
         "child_due": "2026-05-25",
         "is_need_studio": true,
         "child_notes": "Studio needed for ketupat and lantern product arrangement photography",
-        "storyPoints": 3,
-        "assignedTo": {
-          "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
-          "name": "Designer Two",
-          "email": "designer2@company.com"
-        }
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "sm02c003-0000-4000-8000-200000000023",
@@ -1110,16 +1135,11 @@
         "child_due": "2026-05-26",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1,
-        "assignedTo": {
-          "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
-          "name": "Chandra Hermawan",
-          "email": "chandra.hermawan@astronauts.id"
-        }
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T06:38:00.650Z",
-    "storyPoints": 5
+    "storyPoints": null
   },
   {
     "id": "sm030003-0000-4000-8000-200000000003",
@@ -1175,7 +1195,9 @@
         "child_type": "instagram",
         "child_due": "2026-05-29",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm03c002-0000-4000-8000-200000000032",
@@ -1192,7 +1214,9 @@
         "child_type": "instagram",
         "child_due": "2026-05-30",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm03c003-0000-4000-8000-200000000033",
@@ -1209,10 +1233,12 @@
         "child_type": "instagram",
         "child_due": "2026-05-31",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.683Z"
+    "storyPoints": null
   },
   {
     "id": "sm040004-0000-4000-8000-200000000004",
@@ -1268,7 +1294,9 @@
         "child_type": "instagram",
         "child_due": "2026-06-01",
         "is_need_studio": true,
-        "child_notes": "Studio shoot needed: anniversary prop setup with logo, balloons, and brand colors"
+        "child_notes": "Studio shoot needed: anniversary prop setup with logo, balloons, and brand colors",
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "sm04c002-0000-4000-8000-200000000042",
@@ -1285,7 +1313,9 @@
         "child_type": "instagram",
         "child_due": "2026-06-02",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "sm04c003-0000-4000-8000-200000000043",
@@ -1302,10 +1332,12 @@
         "child_type": "instagram",
         "child_due": "2026-06-03",
         "is_need_studio": true,
-        "child_notes": "Studio photo of the team holding '5 Years' sign for the closing slide"
+        "child_notes": "Studio photo of the team holding '5 Years' sign for the closing slide",
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.689Z"
+    "storyPoints": null
   },
   {
     "id": "sm050005-0000-4000-8000-200000000005",
@@ -1361,7 +1393,9 @@
         "child_type": "linkedin",
         "child_due": "2026-06-10",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm05c002-0000-4000-8000-200000000052",
@@ -1378,7 +1412,9 @@
         "child_type": "other",
         "child_due": "2026-06-11",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm05c003-0000-4000-8000-200000000053",
@@ -1395,10 +1431,12 @@
         "child_type": "facebook",
         "child_due": "2026-06-12",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.714Z"
+    "storyPoints": null
   },
   {
     "id": "sm060006-0000-4000-8000-200000000006",
@@ -1454,7 +1492,9 @@
         "child_type": "tiktok",
         "child_due": "2026-06-16",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm06c002-0000-4000-8000-200000000062",
@@ -1471,7 +1511,9 @@
         "child_type": "tiktok",
         "child_due": "2026-06-17",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "sm06c003-0000-4000-8000-200000000063",
@@ -1488,20 +1530,18 @@
         "child_type": "other",
         "child_due": "2026-06-18",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "updatedAt": "2026-05-21T05:28:12.736Z"
+    "storyPoints": null
   },
   {
     "id": "da010001-0000-4000-8000-300000000001",
     "ticketId": "DAXC-01",
     "status": "requested",
-    "assignedTo": {
-      "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
-      "name": "Sheren",
-      "email": "sheren@astronauts.id"
-    },
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -1550,7 +1590,8 @@
         "child_due": "2026-05-25",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da01c002-0000-4000-8000-300000000012",
@@ -1568,7 +1609,8 @@
         "child_due": "2026-05-26",
         "is_need_studio": true,
         "child_notes": "Studio product shot required: product must be on gold/premium background for Ramadan theme",
-        "storyPoints": 5
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da01c003-0000-4000-8000-300000000013",
@@ -1586,21 +1628,17 @@
         "child_due": "2026-05-27",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T06:13:02.317Z",
-    "storyPoints": 7
+    "storyPoints": null
   },
   {
     "id": "da020002-0000-4000-8000-300000000002",
     "ticketId": "DAXC-02",
     "status": "requested",
-    "assignedTo": {
-      "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
-      "name": "Chandra Hermawan",
-      "email": "chandra.hermawan@astronauts.id"
-    },
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -1649,7 +1687,8 @@
         "child_due": "2026-05-30",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 2
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da02c002-0000-4000-8000-300000000022",
@@ -1667,7 +1706,8 @@
         "child_due": "2026-05-31",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da02c003-0000-4000-8000-300000000023",
@@ -1685,11 +1725,11 @@
         "child_due": "2026-06-01",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 2
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T06:01:19.496Z",
-    "storyPoints": 5
+    "storyPoints": null
   },
   {
     "id": "da030003-0000-4000-8000-300000000003",
@@ -1735,12 +1775,32 @@
       {
         "id": "da03c001-0000-4000-8000-300000000031",
         "ticketId": "DAXC-03-01",
-        "status": "requested",
+        "status": "on_review",
         "statusHistory": [
           {
             "from": null,
             "to": "requested",
             "changedAt": "2026-05-21T11:00:00.000Z"
+          },
+          {
+            "from": "requested",
+            "to": "in_progress",
+            "changedAt": "2026-05-21T10:11:48.302Z",
+            "changedBy": {
+              "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+              "name": "Designer One",
+              "role": "creative_designer"
+            }
+          },
+          {
+            "from": "in_progress",
+            "to": "on_review",
+            "changedAt": "2026-05-21T10:11:52.110Z",
+            "changedBy": {
+              "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+              "name": "Designer One",
+              "role": "creative_designer"
+            }
           }
         ],
         "child_title": "Video Thumbnail Frame 9:16",
@@ -1748,7 +1808,12 @@
         "child_due": "2026-06-02",
         "is_need_studio": true,
         "child_notes": "Studio product shot required on branded set with neon lighting treatment",
-        "storyPoints": 1
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+          "name": "Designer One",
+          "email": "designer1@company.com"
+        }
       },
       {
         "id": "da03c002-0000-4000-8000-300000000032",
@@ -1766,7 +1831,12 @@
         "child_due": "2026-06-03",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+          "name": "Designer Two",
+          "email": "designer2@company.com"
+        }
       },
       {
         "id": "da03c003-0000-4000-8000-300000000033",
@@ -1784,21 +1854,22 @@
         "child_due": "2026-06-04",
         "is_need_studio": true,
         "child_notes": "Studio CTA scene needed: person holding product looking at camera",
-        "storyPoints": 1
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+          "name": "Designer One",
+          "email": "designer1@company.com"
+        }
       }
     ],
-    "updatedAt": "2026-05-21T06:01:00.511Z",
-    "storyPoints": 3
+    "storyPoints": 6,
+    "updatedAt": "2026-05-21T10:11:52.110Z"
   },
   {
     "id": "da040004-0000-4000-8000-300000000004",
     "ticketId": "DAXC-04",
     "status": "requested",
-    "assignedTo": {
-      "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
-      "name": "Designer Two",
-      "email": "designer2@company.com"
-    },
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -1847,7 +1918,8 @@
         "child_due": "2026-06-13",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da04c002-0000-4000-8000-300000000042",
@@ -1865,7 +1937,8 @@
         "child_due": "2026-06-14",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da04c003-0000-4000-8000-300000000043",
@@ -1883,21 +1956,17 @@
         "child_due": "2026-06-15",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 1
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T05:47:08.981Z",
-    "storyPoints": 3
+    "storyPoints": null
   },
   {
     "id": "da050005-0000-4000-8000-300000000005",
     "ticketId": "DAXC-05",
     "status": "requested",
-    "assignedTo": {
-      "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
-      "name": "Chandra Hermawan",
-      "email": "chandra.hermawan@astronauts.id"
-    },
+    "assignedTo": null,
     "comments": [],
     "statusHistory": [
       {
@@ -1946,7 +2015,8 @@
         "child_due": "2026-06-24",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 3
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da05c002-0000-4000-8000-300000000052",
@@ -1964,7 +2034,8 @@
         "child_due": "2026-06-25",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 2
+        "storyPoints": null,
+        "assignedTo": null
       },
       {
         "id": "da05c003-0000-4000-8000-300000000053",
@@ -1982,11 +2053,11 @@
         "child_due": "2026-06-26",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": 5
+        "storyPoints": null,
+        "assignedTo": null
       }
     ],
-    "updatedAt": "2026-05-21T05:47:08.994Z",
-    "storyPoints": 10
+    "storyPoints": null
   },
   {
     "id": "oc010001-0000-4000-8000-400000000001",
@@ -2041,7 +2112,9 @@
         "child_type": "A1 portrait",
         "child_due": "2026-05-26",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc01c002-0000-4000-8000-400000000012",
@@ -2058,7 +2131,9 @@
         "child_type": "A2 landscape",
         "child_due": "2026-05-27",
         "is_need_studio": true,
-        "child_notes": "Studio shoot required: product flatlay with Ramadan decorations (dates, lantern, crescent)"
+        "child_notes": "Studio shoot required: product flatlay with Ramadan decorations (dates, lantern, crescent)",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc01c003-0000-4000-8000-400000000013",
@@ -2075,11 +2150,12 @@
         "child_type": "A4",
         "child_due": "2026-05-28",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 1,
-    "updatedAt": "2026-05-21T05:22:03.927Z"
+    "storyPoints": null
   },
   {
     "id": "oc020002-0000-4000-8000-400000000002",
@@ -2134,7 +2210,9 @@
         "child_type": "80x200cm",
         "child_due": "2026-06-01",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc02c002-0000-4000-8000-400000000022",
@@ -2151,7 +2229,9 @@
         "child_type": "60x160cm",
         "child_due": "2026-06-02",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc02c003-0000-4000-8000-400000000023",
@@ -2168,11 +2248,12 @@
         "child_type": "20x30cm",
         "child_due": "2026-06-03",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 4,
-    "updatedAt": "2026-05-21T05:21:59.241Z"
+    "storyPoints": null
   },
   {
     "id": "oc030003-0000-4000-8000-400000000003",
@@ -2227,7 +2308,9 @@
         "child_type": "A4",
         "child_due": "2026-06-04",
         "is_need_studio": true,
-        "child_notes": "Studio lifestyle shoot needed: happy member using loyalty card at cashier"
+        "child_notes": "Studio lifestyle shoot needed: happy member using loyalty card at cashier",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc03c002-0000-4000-8000-400000000032",
@@ -2244,7 +2327,9 @@
         "child_type": "A4",
         "child_due": "2026-06-05",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc03c003-0000-4000-8000-400000000033",
@@ -2261,11 +2346,12 @@
         "child_type": "A4",
         "child_due": "2026-06-06",
         "is_need_studio": true,
-        "child_notes": "Studio QR code lifestyle shot needed: member scanning QR to join program"
+        "child_notes": "Studio QR code lifestyle shot needed: member scanning QR to join program",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 10,
-    "updatedAt": "2026-05-21T05:21:53.255Z"
+    "storyPoints": null
   },
   {
     "id": "oc040004-0000-4000-8000-400000000004",
@@ -2320,7 +2406,9 @@
         "child_type": "custom",
         "child_due": "2026-06-12",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc04c002-0000-4000-8000-400000000042",
@@ -2337,7 +2425,9 @@
         "child_type": "custom",
         "child_due": "2026-06-13",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc04c003-0000-4000-8000-400000000043",
@@ -2354,11 +2444,12 @@
         "child_type": "custom",
         "child_due": "2026-06-14",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 4,
-    "updatedAt": "2026-05-21T05:21:48.730Z"
+    "storyPoints": null
   },
   {
     "id": "oc050005-0000-4000-8000-400000000005",
@@ -2413,7 +2504,9 @@
         "child_type": "DL 99x210mm",
         "child_due": "2026-06-20",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc05c002-0000-4000-8000-400000000052",
@@ -2430,7 +2523,9 @@
         "child_type": "DL 99x210mm",
         "child_due": "2026-06-21",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "oc05c003-0000-4000-8000-400000000053",
@@ -2447,11 +2542,12 @@
         "child_type": "A5",
         "child_due": "2026-06-22",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 8,
-    "updatedAt": "2026-05-21T05:21:42.961Z"
+    "storyPoints": null
   },
   {
     "id": "pa010001-0000-4000-8000-500000000001",
@@ -2507,7 +2603,9 @@
         "child_type": "other",
         "child_due": "2026-05-27",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa01c002-0000-4000-8000-500000000012",
@@ -2524,7 +2622,9 @@
         "child_type": "other",
         "child_due": "2026-05-28",
         "is_need_studio": true,
-        "child_notes": "Studio mockup shoot needed: label applied to actual bottle for approval photography"
+        "child_notes": "Studio mockup shoot needed: label applied to actual bottle for approval photography",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa01c003-0000-4000-8000-500000000013",
@@ -2541,11 +2641,12 @@
         "child_type": "other",
         "child_due": "2026-05-29",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 5,
-    "updatedAt": "2026-05-21T05:21:34.850Z"
+    "storyPoints": null
   },
   {
     "id": "pa020002-0000-4000-8000-500000000002",
@@ -2601,7 +2702,9 @@
         "child_type": "other",
         "child_due": "2026-06-03",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa02c002-0000-4000-8000-500000000022",
@@ -2618,7 +2721,9 @@
         "child_type": "other",
         "child_due": "2026-06-04",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa02c003-0000-4000-8000-500000000023",
@@ -2635,11 +2740,12 @@
         "child_type": "other",
         "child_due": "2026-06-05",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 2,
-    "updatedAt": "2026-05-21T05:12:06.398Z"
+    "storyPoints": null
   },
   {
     "id": "pa030003-0000-4000-8000-500000000003",
@@ -2695,7 +2801,9 @@
         "child_type": "other",
         "child_due": "2026-06-05",
         "is_need_studio": true,
-        "child_notes": "Studio flatlay needed: box surrounded by raw muesli ingredients for packaging reference photography"
+        "child_notes": "Studio flatlay needed: box surrounded by raw muesli ingredients for packaging reference photography",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa03c002-0000-4000-8000-500000000032",
@@ -2712,7 +2820,9 @@
         "child_type": "other",
         "child_due": "2026-06-06",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa03c003-0000-4000-8000-500000000033",
@@ -2729,9 +2839,12 @@
         "child_type": "other",
         "child_due": "2026-06-07",
         "is_need_studio": true,
-        "child_notes": "Studio family lifestyle shot needed: family breakfast table scene with product as hero"
+        "child_notes": "Studio family lifestyle shot needed: family breakfast table scene with product as hero",
+        "assignedTo": null,
+        "storyPoints": null
       }
-    ]
+    ],
+    "storyPoints": null
   },
   {
     "id": "pa040004-0000-4000-8000-500000000004",
@@ -2787,7 +2900,9 @@
         "child_type": "other",
         "child_due": "2026-06-15",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa04c002-0000-4000-8000-500000000042",
@@ -2804,7 +2919,9 @@
         "child_type": "other",
         "child_due": "2026-06-16",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa04c003-0000-4000-8000-500000000043",
@@ -2821,11 +2938,12 @@
         "child_type": "other",
         "child_due": "2026-06-17",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 2,
-    "updatedAt": "2026-05-21T05:11:59.600Z"
+    "storyPoints": null
   },
   {
     "id": "pa050005-0000-4000-8000-500000000005",
@@ -2881,7 +2999,9 @@
         "child_type": "other",
         "child_due": "2026-06-22",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa05c002-0000-4000-8000-500000000052",
@@ -2898,7 +3018,9 @@
         "child_type": "other",
         "child_due": "2026-06-23",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       },
       {
         "id": "pa05c003-0000-4000-8000-500000000053",
@@ -2915,10 +3037,91 @@
         "child_type": "other",
         "child_due": "2026-06-24",
         "is_need_studio": false,
-        "child_notes": ""
+        "child_notes": "",
+        "assignedTo": null,
+        "storyPoints": null
       }
     ],
-    "storyPoints": 2,
-    "updatedAt": "2026-05-21T05:11:48.250Z"
+    "storyPoints": null
+  },
+  {
+    "id": "ed312c5f-700d-4b4c-8de4-a6fc8c9ffb61",
+    "ticketId": "PAC-06",
+    "status": "requested",
+    "assignedTo": null,
+    "comments": [],
+    "statusHistory": [
+      {
+        "from": null,
+        "to": "requested",
+        "changedAt": "2026-05-21T07:24:35.612Z",
+        "changedBy": {
+          "id": "e186bcca-83b0-46e9-a463-d8ca8dc42763",
+          "email": "requester@company.com",
+          "name": "Requester One"
+        }
+      }
+    ],
+    "submittedAt": "2026-05-21T07:24:35.612Z",
+    "project": "pac",
+    "fields": {
+      "title": "Kerupuk haram sekali",
+      "description": "dfadsf",
+      "product_name": "adfadsf",
+      "packaging_type": "pouch",
+      "priority": "low",
+      "deadline": "2026-05-28",
+      "dimensions": "asdfadsf",
+      "revisions": 10,
+      "reference_url": "https://www.google.com/search?q=vite&oq=vite&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIKCAEQABixAxiABDINCAIQABiDARixAxiABDIKCAMQABixAxiABDIKCAQQABixAxiABDIHCAUQLhiABDIKCAYQABixAxiABDIQCAcQABiDARixAxiABBiKBTIHCAgQABiABDIQCAkQLhjHARixAxjRAxiABNIBCDIwMTNqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8",
+      "regulatory_info": "asdfadsf",
+      "notes": "adsfadsf"
+    },
+    "submittedBy": {
+      "id": "e186bcca-83b0-46e9-a463-d8ca8dc42763",
+      "email": "requester@company.com",
+      "name": "Requester One"
+    },
+    "childIssues": [
+      {
+        "id": "91c09682-0ac2-479d-a4ae-03e11ef1a627",
+        "ticketId": "PAC-06-01",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-21T07:24:35.612Z"
+          }
+        ],
+        "child_title": "1000ml",
+        "child_type": "adsfasdf",
+        "child_due": "2026-05-28",
+        "is_need_studio": false,
+        "child_notes": "",
+        "storyPoints": null,
+        "assignedTo": null
+      },
+      {
+        "id": "d3e3d682-7c24-4a18-89ed-4948c8b11104",
+        "ticketId": "PAC-06-02",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-21T07:24:35.612Z"
+          }
+        ],
+        "child_title": "150ml",
+        "child_type": "asdfadsf",
+        "child_due": "2026-05-25",
+        "is_need_studio": false,
+        "child_notes": "",
+        "storyPoints": null,
+        "assignedTo": null
+      }
+    ],
+    "storyPoints": null
   }
 ]

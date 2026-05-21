@@ -34,12 +34,17 @@ async function loadProjects() {
   } catch {}
 }
 
+function getRequesterAllowedProjects(list) {
+  const raw  = localStorage.getItem('crp_user') || sessionStorage.getItem('crp_user');
+  const user = raw ? JSON.parse(raw) : {};
+  const scope = user.projects?.length ? user.projects : null;
+  return list.filter(p => !p.isStudio && !p.isCopywriting && (!scope || scope.includes(p.id)));
+}
+
 function renderProjectNav(list) {
   const nav = document.getElementById('projectNav');
   const current = new URLSearchParams(window.location.search).get('project');
-  nav.innerHTML = list
-    .filter(p => !p.isStudio)
-    .map(p => `
+  nav.innerHTML = getRequesterAllowedProjects(list).map(p => `
       <a class="project-nav-item ${p.id === current ? 'active' : ''}" href="/form?project=${p.id}">
         <span class="project-nav-dot" style="background:${p.color}"></span>
         <span class="project-nav-label">${p.name}</span>
@@ -50,10 +55,7 @@ function renderProjectNav(list) {
 function renderProjectPicker(list) {
   const grid = document.getElementById('projectPickerGrid');
   if (!grid) return;
-  // Studio is a virtual aggregation project — requesters cannot submit to it directly
-  grid.innerHTML = list
-    .filter(p => !p.isStudio)
-    .map(p => `
+  grid.innerHTML = getRequesterAllowedProjects(list).map(p => `
       <div class="project-card" onclick="window.location.href='/form?project=${p.id}'">
         <div class="project-card-icon">${p.icon}</div>
         <div class="project-card-name">${p.name}</div>

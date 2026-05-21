@@ -7,8 +7,11 @@ let projects            = [];
 let tickets             = [];
 let teamMembers         = [];
 let allLeads            = [];
-let pendingCommentImage = null;
-let donutChartInstance  = null;
+let pendingCommentImage  = null;
+let donutChartInstance   = null;
+let subtaskFilterActive  = false;
+let requesterActiveTab   = 'mine';  // 'mine' | 'queue'
+let queueTickets         = [];
 let barChartInstance    = null;
 let statusChartInstance = null;
 
@@ -74,6 +77,54 @@ const STATUS_CHART_COLORS = {
 };
 
 const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+
+// ── Sort state (per-view, persists across filter changes) ──────────────────
+let sortLead     = 'date_desc';
+let sortDesigner = 'date_desc';
+let sortMine     = 'date_desc';
+let sortQueue    = 'date_desc';
+
+const SORT_OPTIONS = [
+  { value: 'date_desc',    label: 'Newest first' },
+  { value: 'date_asc',     label: 'Oldest first' },
+  { value: 'priority',     label: 'Priority level' },
+  { value: 'sp_desc',      label: 'Story points ↓' },
+  { value: 'sp_asc',       label: 'Story points ↑' },
+  { value: 'updated_desc', label: 'Recently edited' },
+  { value: 'updated_asc',  label: 'Least recently edited' }
+];
+
+function sortSelectHtml(id, currentVal, onchange) {
+  const opts = SORT_OPTIONS.map(o =>
+    `<option value="${o.value}"${o.value === currentVal ? ' selected' : ''}>${o.label}</option>`
+  ).join('');
+  return `<select id="${id}" class="filter-select sort-select" onchange="${onchange}">${opts}</select>`;
+}
+
+function sortTickets(list, key = 'date_desc') {
+  const arr = [...list];
+  switch (key) {
+    case 'date_asc':
+      return arr.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+    case 'priority':
+      return arr.sort((a, b) => (PRIORITY_ORDER[a.fields?.priority] ?? 4) - (PRIORITY_ORDER[b.fields?.priority] ?? 4));
+    case 'sp_desc':
+      return arr.sort((a, b) => (b.storyPoints || 0) - (a.storyPoints || 0));
+    case 'sp_asc':
+      return arr.sort((a, b) => (a.storyPoints || 0) - (b.storyPoints || 0));
+    case 'updated_desc':
+      return arr.sort((a, b) => new Date(b.updatedAt || b.submittedAt) - new Date(a.updatedAt || a.submittedAt));
+    case 'updated_asc':
+      return arr.sort((a, b) => new Date(a.updatedAt || a.submittedAt) - new Date(b.updatedAt || b.submittedAt));
+    default: // date_desc
+      return arr.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  }
+}
+
+window.changeSortLead     = v => { sortLead     = v; applyAllFilters(); };
+window.changeSortDesigner = v => { sortDesigner = v; filterDesignerTickets(); };
+window.changeSortMine     = v => { sortMine     = v; filterRequesterTickets(); };
+window.changeSortQueue    = v => { sortQueue    = v; filterQueueTickets(); };
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -153,38 +204,73 @@ function priorityFilterOpts() {
   return `<option value="">All Priorities</option>${PRIORITY_OPTIONS.map(p => `<option value="${p.value}">${p.label}</option>`).join('')}`;
 }
 
-// ── Requester View ─────────────────────────────────────────────────────────
+// ── Requester View (tabbed) ────────────────────────────────────────────────
 
 function renderRequesterView() {
-  document.getElementById('pageTitle').textContent = 'My Requests';
+  document.getElementById('pageTitle').textContent = 'Dashboard';
   document.getElementById('topBarRight').innerHTML = `<a href="/form" class="btn btn-primary">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
     New Request</a>`;
 
   const area = document.getElementById('contentArea');
-  if (!tickets.length) { area.innerHTML = emptyState('No requests yet', 'Submit your first creative request.', '/form', 'New Request'); return; }
+  area.innerHTML = `
+    <div class="req-tab-bar">
+      <button class="req-tab${requesterActiveTab === 'mine'  ? ' active' : ''}" onclick="switchRequesterTab('mine')">📋 My Requests</button>
+      <button class="req-tab${requesterActiveTab === 'queue' ? ' active' : ''}" onclick="switchRequesterTab('queue')">📊 Project Queue</button>
+    </div>
+    <div id="reqTabContent"></div>`;
+
+  if (requesterActiveTab === 'mine') {
+    renderMineTab();
+  } else {
+    renderQueueTab();
+  }
+}
+
+// ── My Requests tab ────────────────────────────────────────────────────────
+
+function renderMineTab() {
+  const el = document.getElementById('reqTabContent');
+  if (!el) return;
+
+  if (!tickets.length) {
+    el.innerHTML = emptyState('No requests yet', 'Submit your first creative request.', '/form', 'New Request');
+    return;
+  }
 
   const total = tickets.length;
   const pend  = tickets.filter(t => t.status === 'requested').length;
-  const act   = tickets.filter(t => !['approved'].includes(t.status)).length;
+  const act   = tickets.filter(t => t.status !== 'approved').length;
   const appr  = tickets.filter(t => t.status === 'approved').length;
 
-  area.innerHTML = `
+  const myProjects = currentUser.projects?.length
+    ? projects.filter(p => currentUser.projects.includes(p.id) && !p.isStudio && !p.isCopywriting)
+    : projects.filter(p => !p.isStudio && !p.isCopywriting);
+
+  el.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      ${statCard(total,'Total Requests')}${statCard(pend,'Pending')}${statCard(act,'Active')}${statCard(appr,'Approved')}
+      ${statCard(total,'Total Requests','','','','','','req-total')}
+      ${statCard(pend,'Pending','','','','','','req-pend')}
+      ${statCard(act,'Active','','','','','','req-act')}
+      ${statCard(appr,'Approved','','','','','','req-appr')}
     </div>
     <div class="table-toolbar" style="margin-bottom:12px">
       <div class="filter-group">
+        ${myProjects.length > 1 ? `<select id="reqFilterProject" class="filter-select" onchange="filterRequesterTickets()">
+          <option value="">All Projects</option>
+          ${myProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>` : ''}
         <select id="reqFilterPriority" class="filter-select" onchange="filterRequesterTickets()">${priorityFilterOpts()}</select>
         <select id="reqFilterStatus" class="filter-select" onchange="filterRequesterTickets()">
           <option value="">All Statuses</option>
           ${Object.entries(STATUS_LABELS).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
         </select>
       </div>
+      ${sortSelectHtml('mineSort', sortMine, 'changeSortMine(this.value)')}
     </div>
     <div class="ticket-list" id="ticketList"></div>`;
 
-  renderRequesterTickets(tickets);
+  renderRequesterTickets(sortTickets(tickets, sortMine));
 }
 
 function renderRequesterTickets(list) {
@@ -196,12 +282,151 @@ function renderRequesterTickets(list) {
 }
 
 window.filterRequesterTickets = function () {
+  const project  = document.getElementById('reqFilterProject')?.value;
   const priority = document.getElementById('reqFilterPriority')?.value;
   const status   = document.getElementById('reqFilterStatus')?.value;
   let filtered   = tickets;
+  if (project)  filtered = filtered.filter(t => t.project === project);
   if (priority) filtered = filtered.filter(t => t.fields?.priority === priority);
   if (status)   filtered = filtered.filter(t => t.status === status);
-  renderRequesterTickets(filtered);
+  renderRequesterTickets(sortTickets(filtered, sortMine));
+  updateRequesterStatCards(filtered);
+};
+
+// ── Project Queue tab ──────────────────────────────────────────────────────
+
+async function renderQueueTab() {
+  const el = document.getElementById('reqTabContent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-state">Loading project queue…</div>';
+  try {
+    const { data } = await window.api.get('/api/requests?queue=true');
+    queueTickets = data;
+    renderQueueContent();
+  } catch {
+    el.innerHTML = '<div class="loading-state">Failed to load project queue.</div>';
+  }
+}
+
+function renderQueueContent() {
+  const el = document.getElementById('reqTabContent');
+  if (!el) return;
+
+  if (!queueTickets.length) {
+    el.innerHTML = `<div class="empty-state-full"><div class="empty-icon">📭</div>
+      <h3>No tickets in queue</h3>
+      <p>No active tickets found for your project(s).</p></div>`;
+    return;
+  }
+
+  const qTotal = queueTickets.length;
+  const qInP   = queueTickets.filter(t => t.status === 'in_progress').length;
+  const qRev   = queueTickets.filter(t => t.status === 'on_review' || t.status === 'revised').length;
+  const qNR    = queueTickets.filter(t => ['need_revision','revision'].includes(t.status)).length;
+
+  const queueProjects = currentUser.projects?.length
+    ? projects.filter(p => currentUser.projects.includes(p.id) && !p.isStudio && !p.isCopywriting)
+    : projects.filter(p => !p.isStudio && !p.isCopywriting);
+
+  el.innerHTML = `
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      ${statCard(qTotal,'In Queue','','','','','','q-total')}
+      ${statCard(qInP,'In Progress','','','','','','q-inp')}
+      ${statCard(qRev,'On Review','','','','','','q-rev')}
+      ${statCard(qNR,'Needs Revision','','','','','','q-nr')}
+    </div>
+    <div class="table-toolbar" style="margin-bottom:12px">
+      <div class="filter-group">
+        ${queueProjects.length > 1 ? `<select id="qFilterProject" class="filter-select" onchange="filterQueueTickets()">
+          <option value="">All Projects</option>
+          ${queueProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>` : ''}
+        <select id="qFilterStatus" class="filter-select" onchange="filterQueueTickets()">
+          <option value="">All Statuses</option>
+          ${Object.entries(STATUS_LABELS).filter(([k]) => k !== 'approved').map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+        </select>
+        <select id="qFilterPriority" class="filter-select" onchange="filterQueueTickets()">${priorityFilterOpts()}</select>
+      </div>
+      ${sortSelectHtml('queueSort', sortQueue, 'changeSortQueue(this.value)')}
+    </div>
+    <p class="section-hint">Read-only view of all active tickets in your project(s). Click any ticket to view details.</p>
+    <div class="ticket-list" id="queueTicketList"></div>`;
+
+  renderQueueList(sortTickets(queueTickets, sortQueue));
+}
+
+function renderQueueList(list) {
+  const el = document.getElementById('queueTicketList');
+  if (!el) return;
+  el.innerHTML = list.length
+    ? list.map(t => queueBubble(t)).join('')
+    : '<div class="empty-list">No tickets match the selected filters.</div>';
+}
+
+function queueBubble(t) {
+  const proj  = projects.find(p => p.id === t.project);
+  const title = t.fields?.title || '(no title)';
+  const studioCount = (t.childIssues || []).filter(c => c.is_need_studio).length;
+  const cwCount     = (t.childIssues || []).filter(c => c.is_need_copywriting).length;
+  const subCount    = t.childIssues?.length || 0;
+  const approvedSubs = (t.childIssues || []).filter(c => c.status === 'approved').length;
+
+  return `
+    <div class="ticket-bubble queue-bubble" onclick="openTicketModal('${t.id}')">
+      <div class="ticket-bubble-main">
+        <div class="ticket-bubble-left">
+          <div>
+            ${t.ticketId ? `<span class="ticket-id-badge">${escHtml(t.ticketId)}</span>` : ''}
+            <span class="ticket-title">${escHtml(title)}</span>
+            <div class="ticket-meta">
+              ${proj ? `<span class="meta-tag" style="color:${proj.color}">${proj.name}</span>` : ''}
+              ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
+              ${t.fields?.deadline ? `<span class="meta-tag">Due: ${fmtDate(t.fields.deadline)}</span>` : ''}
+              ${t.storyPoints != null ? `<span class="sp-badge">SP: ${t.storyPoints}</span>` : ''}
+              ${studioCount ? `<span class="studio-badge">🎬 ${studioCount}</span>` : ''}
+              ${cwCount ? `<span class="cw-badge">✍️ ${cwCount}</span>` : ''}
+              ${subCount ? `<span class="meta-tag">${approvedSubs}/${subCount} sub-tasks done</span>` : ''}
+              ${t.assignedTo
+                ? `<span class="assignee-tag">${escHtml(t.assignedTo.name)}</span>`
+                : `<span class="unassigned-tag">Unassigned</span>`}
+            </div>
+          </div>
+        </div>
+        <div class="ticket-bubble-right">
+          <span class="status-badge status-${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
+          <span class="view-link">View →</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+window.filterQueueTickets = function () {
+  const project  = document.getElementById('qFilterProject')?.value;
+  const status   = document.getElementById('qFilterStatus')?.value;
+  const priority = document.getElementById('qFilterPriority')?.value;
+  let filtered   = queueTickets;
+  if (project)  filtered = filtered.filter(t => t.project === project);
+  if (status)   filtered = filtered.filter(t => t.status === status);
+  if (priority) filtered = filtered.filter(t => t.fields?.priority === priority);
+  renderQueueList(sortTickets(filtered, sortQueue));
+  const sv = (id, val) => { const e = document.getElementById(`scv-${id}`); if (e) e.textContent = val; };
+  sv('q-total', filtered.length);
+  sv('q-inp',   filtered.filter(t => t.status === 'in_progress').length);
+  sv('q-rev',   filtered.filter(t => t.status === 'on_review' || t.status === 'revised').length);
+  sv('q-nr',    filtered.filter(t => ['need_revision','revision'].includes(t.status)).length);
+};
+
+window.switchRequesterTab = async function (tab) {
+  requesterActiveTab = tab;
+  document.querySelectorAll('.req-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.req-tab').forEach(b => {
+    if (b.textContent.toLowerCase().includes(tab === 'mine' ? 'my' : 'queue')) b.classList.add('active');
+  });
+  if (tab === 'mine') {
+    renderMineTab();
+  } else {
+    await renderQueueTab();
+  }
 };
 
 function requesterBubble(t) {
@@ -244,7 +469,9 @@ function renderDesignerView() {
 
   area.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-      ${statCard(tickets.length,'Active Tickets')}${statCard(inP,'In Progress')}${statCard(att,'Needs Attention')}
+      ${statCard(tickets.length,'Active Tickets','','','','','','ds-total')}
+      ${statCard(inP,'In Progress','','','','','','ds-inp')}
+      ${statCard(att,'Needs Attention','','','','','','ds-att')}
     </div>
     <div class="table-toolbar" style="margin-bottom:12px">
       <div class="filter-group">
@@ -254,11 +481,12 @@ function renderDesignerView() {
           ${Object.entries(STATUS_LABELS).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
         </select>
       </div>
+      ${sortSelectHtml('dsSort', sortDesigner, 'changeSortDesigner(this.value)')}
     </div>
     <p class="section-hint">Click ▶ to expand sub-tasks. Click Details to view discussion.</p>
     <div class="ticket-list" id="ticketList"></div>`;
 
-  renderDesignerTickets(tickets);
+  renderDesignerTickets(sortTickets(tickets, sortDesigner));
 }
 
 function renderDesignerTickets(list) {
@@ -275,7 +503,8 @@ window.filterDesignerTickets = function () {
   let filtered   = tickets;
   if (priority) filtered = filtered.filter(t => t.fields?.priority === priority);
   if (status)   filtered = filtered.filter(t => t.status === status);
-  renderDesignerTickets(filtered);
+  renderDesignerTickets(sortTickets(filtered, sortDesigner));
+  updateDesignerStatCards(filtered);
 };
 
 function designerBubble(t) {
@@ -304,7 +533,7 @@ function designerBubble(t) {
 
   return `
     <div class="ticket-bubble${hasChildren ? ' has-children' : ''}" id="bubble-${t.id}">
-      <div class="ticket-bubble-main" onclick="toggleChildren('${t.id}',${hasChildren})">
+      <div class="ticket-bubble-main" onclick="openTicketModal('${t.id}')">
         <div class="ticket-bubble-left">
           ${hasChildren ? `<button class="toggle-arrow" id="arrow-${t.id}" onclick="event.stopPropagation();toggleChildren('${t.id}',true)">▶</button>` : '<span class="toggle-placeholder"></span>'}
           <div>
@@ -360,10 +589,12 @@ function renderLeadView() {
   tickets.forEach(t => { if (t.assignedTo && !assigneeMap.has(t.assignedTo.id)) assigneeMap.set(t.assignedTo.id, t.assignedTo); });
   const allAssignees = Array.from(assigneeMap.values());
 
-  const total = tickets.length;
-  const unas  = unassigned.length;
-  const inP   = tickets.filter(t => t.status === 'in_progress').length;
-  const rev   = tickets.filter(t => t.status === 'on_review' || t.status === 'revised').length;
+  const total        = tickets.length;
+  const unas         = unassigned.length;
+  const inP          = tickets.filter(t => t.status === 'in_progress').length;
+  const rev          = tickets.filter(t => t.status === 'on_review' || t.status === 'revised').length;
+  const totalSubs    = tickets.reduce((s, t) => s + (t.childIssues?.length || 0), 0);
+  const unassSubs    = tickets.reduce((s, t) => s + (t.childIssues || []).filter(c => !c.assignedTo).length, 0);
 
   const teamHtml = teamMembers.map(m => {
     const usedSP    = tickets.filter(t => t.assignedTo?.id === m.id).reduce((s, t) => s + (t.storyPoints || 0), 0);
@@ -398,7 +629,10 @@ function renderLeadView() {
 
   area.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      ${statCard(total,'Total Tickets')}${statCard(unas,'Unassigned',unas>0?'danger':'')}${statCard(inP,'In Progress')}${statCard(rev,'Needs Review')}
+      ${statCard(total,'Total Tickets','',totalSubs,'sub-tasks','toggleSubtaskFilter()','subtaskFilterBtn','total')}
+      ${statCard(unas,'Unassigned',unas>0?'danger':'',unassSubs,'unassigned sub-tasks','','','unas')}
+      ${statCard(inP,'In Progress','','','','','','inp')}
+      ${statCard(rev,'Needs Review','','','','','','rev')}
     </div>
 
     <!-- ① Global filter bar — directly below scorecards, affects charts + ticket list -->
@@ -419,9 +653,6 @@ function renderLeadView() {
         </select>
         <select id="filterPriority" class="filter-select" onchange="applyAllFilters()">${priorityFilterOpts()}</select>
       </div>
-      ${unas ? `<button class="quick-filter-unassigned" id="unassignedFilterBtn" onclick="toggleUnassignedFilter()" title="Show unassigned tickets only">
-        ⚠ Unassigned <span class="quick-filter-badge">${unas}</span>
-      </button>` : ''}
     </div>
 
     <!-- ② Auto-assign panel (creative lead only) -->
@@ -465,7 +696,13 @@ function renderLeadView() {
       </div>
     </div>` : ''}
 
-    ${unas ? `<div class="alert alert-warning" style="margin-bottom:16px">⚠ ${unas} unassigned ticket${unas>1?'s':''} — use the assign dropdown or ⚡ auto-assign.</div>` : ''}
+    ${unas ? `<div class="alert alert-warning" style="margin-bottom:12px">⚠ ${unas} unassigned ticket${unas>1?'s':''} — use the assign dropdown or ⚡ auto-assign.</div>` : ''}
+    <div class="pre-list-bar">
+      ${sortSelectHtml('leadSort', sortLead, 'changeSortLead(this.value)')}
+      ${unas ? `<button class="quick-filter-unassigned" id="unassignedFilterBtn" onclick="toggleUnassignedFilter()" title="Show unassigned tickets only">
+        ⚠ Unassigned <span class="quick-filter-badge">${unas}</span>
+      </button>` : ''}
+    </div>
     <div class="ticket-list" id="ticketList"></div>`;
 
   initCharts();
@@ -490,11 +727,26 @@ function getDropdownFilteredTickets() {
   const status   = document.getElementById('filterStatus')?.value   || '';
   const assignee = document.getElementById('filterAssignee')?.value || '';
   const priority = document.getElementById('filterPriority')?.value || '';
-  if (proj)    list = list.filter(t => t.project === proj);
+
+  if (proj) {
+    // Studio and Copywriting are virtual projects — filter by child issue flags
+    if (proj === 'studio') {
+      list = list.filter(t => (t.childIssues || []).some(c => c.is_need_studio === true));
+    } else if (proj === 'copywriting') {
+      list = list.filter(t => (t.childIssues || []).some(c => c.is_need_copywriting === true));
+    } else {
+      list = list.filter(t => t.project === proj);
+    }
+  }
+
   if (status)  list = list.filter(t => t.status  === status);
   if (assignee === '__unassigned__') list = list.filter(t => !t.assignedTo);
   else if (assignee) list = list.filter(t => t.assignedTo?.id === assignee);
   if (priority) list = list.filter(t => t.fields?.priority === priority);
+
+  // Sub-task filter: show only tickets that have child issues
+  if (subtaskFilterActive) list = list.filter(t => (t.childIssues || []).length > 0);
+
   return list;
 }
 
@@ -508,10 +760,12 @@ function applyCrossFilter(list) {
 
 // Central function called by every filter dropdown change AND every chart click
 window.applyAllFilters = function () {
-  const base = getDropdownFilteredTickets();
+  const base     = getDropdownFilteredTickets();
+  const combined = applyCrossFilter(base);
 
-  // Ticket list gets all filters combined
-  renderLeadTickets(applyCrossFilter(base));
+  // Ticket list + scorecards reflect the full combined filter
+  renderLeadTickets(sortTickets(combined, sortLead));
+  updateLeadStatCards(combined);
 
   // Donut + bar charts: filtered by status cross-filter (but NOT designer cross-filter —
   // designer selection is shown as a visual highlight on those two charts)
@@ -558,6 +812,14 @@ function renderCrossFilterBadges() {
       </div>`
     : '';
 }
+
+// Sub-task filter toggle — show only tickets that have child issues
+window.toggleSubtaskFilter = function () {
+  subtaskFilterActive = !subtaskFilterActive;
+  const btn = document.getElementById('subtaskFilterBtn');
+  if (btn) btn.classList.toggle('active', subtaskFilterActive);
+  applyAllFilters();
+};
 
 // Unassigned quick-filter toggle
 window.toggleUnassignedFilter = function () {
@@ -1018,10 +1280,12 @@ function buildDesignerLoads() {
 }
 
 // Returns designers whose scope covers this sub-task
-function getEligibleDesignersForTask(ticketProject, isStudio) {
+function getEligibleDesignersForTask(ticketProject, isStudio, isCopywriting = false) {
   return teamMembers.filter(m => {
     const ps = m.projects || [];
-    return isStudio ? ps.includes('studio') : ps.includes(ticketProject);
+    if (isStudio)       return ps.includes('studio');
+    if (isCopywriting)  return ps.includes('copywriting');
+    return ps.includes(ticketProject);
   });
 }
 
@@ -1048,14 +1312,38 @@ window.autoAssignTicket = async function (ticketId) {
   if (!t) return;
 
   if (t.childIssues?.length) {
-    const eligibleChildren = t.childIssues.filter(c => c.storyPoints != null && c.storyPoints > 0);
-    if (!eligibleChildren.length) {
-      alert('Set story points on sub-tasks first before auto-assigning.');
-      return;
-    }
-    const loads = buildDesignerLoads();
-    for (const c of eligibleChildren) {
-      const designers = getEligibleDesignersForTask(t.project, c.is_need_studio);
+    const withSP = t.childIssues.filter(c => c.storyPoints != null && c.storyPoints > 0);
+    if (!withSP.length) { alert('Set story points on sub-tasks first before auto-assigning.'); return; }
+
+    const loads      = buildDesignerLoads();
+    const studioKids = withSP.filter(c => c.is_need_studio);
+    const cwKids     = withSP.filter(c => c.is_need_copywriting && !c.is_need_studio);
+    const bauKids    = withSP.filter(c => !c.is_need_studio && !c.is_need_copywriting);
+
+    const assignGroupTicket = async (kids, isStudio, isCW) => {
+      if (!kids.length) return;
+      const totalSP  = kids.reduce((s, c) => s + c.storyPoints, 0);
+      const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
+      if (!eligible.length) return;
+      const sub = {};
+      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+      const designer = pickBestDesigner(sub, totalSP);
+      if (!designer) return;
+      for (const c of kids) {
+        try {
+          await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, {
+            assignedTo: { id: designer.id, name: designer.name, email: designer.email }
+          });
+        } catch (err) { alert(err.message); }
+      }
+      if (loads[designer.id]) loads[designer.id].usedSP += totalSP;
+    };
+
+    await assignGroupTicket(studioKids, true,  false);
+    await assignGroupTicket(cwKids,     false, true);
+
+    for (const c of bauKids) {
+      const designers = getEligibleDesignersForTask(t.project, false, false);
       if (!designers.length) continue;
       const sub = {};
       for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
@@ -1091,13 +1379,38 @@ window.autoAssignTicketModal = async function (ticketId) {
   const t = tickets.find(x => x.id === ticketId);
 
   if (t?.childIssues?.length) {
-    const loads = buildDesignerLoads();
+    const loads      = buildDesignerLoads();
+    const spOf       = c => parseInt(document.getElementById(`sp-child-${c.id}`)?.value, 10) || (c.storyPoints || 0);
+    const studioKids = t.childIssues.filter(c => c.is_need_studio  && spOf(c) > 0);
+    const otherKids  = t.childIssues.filter(c => !c.is_need_studio && spOf(c) > 0);
     let lastData = null;
-    for (const c of t.childIssues) {
-      const spInput = document.getElementById(`sp-child-${c.id}`);
-      const sp = parseInt(spInput?.value, 10) || (c.storyPoints || 0);
-      if (!sp) continue;
-      const designers = getEligibleDesignersForTask(t.project, c.is_need_studio);
+
+    // Studio: ONE designer for all studio sub-tasks
+    if (studioKids.length) {
+      const totalSP = studioKids.reduce((s, c) => s + spOf(c), 0);
+      const studioDesigners = getEligibleDesignersForTask(t.project, true);
+      if (studioDesigners.length) {
+        const sub = {};
+        for (const m of studioDesigners) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+        const designer = pickBestDesigner(sub, totalSP);
+        if (designer) {
+          for (const c of studioKids) {
+            try {
+              const { data } = await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, {
+                assignedTo: { id: designer.id, name: designer.name, email: designer.email }
+              });
+              lastData = data;
+            } catch {}
+          }
+          if (loads[designer.id]) loads[designer.id].usedSP += totalSP;
+        }
+      }
+    }
+
+    // Non-studio: assign individually
+    for (const c of otherKids) {
+      const sp = spOf(c);
+      const designers = getEligibleDesignersForTask(t.project, false);
       if (!designers.length) continue;
       const sub = {};
       for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
@@ -1111,6 +1424,7 @@ window.autoAssignTicketModal = async function (ticketId) {
         if (loads[designer.id]) loads[designer.id].usedSP += sp;
       } catch {}
     }
+
     if (lastData) { document.getElementById('modalContent').innerHTML = buildModalContent(lastData); setupCommentImagePaste(); }
     await loadTickets();
   } else {
@@ -1163,10 +1477,37 @@ window.autoAssignAll = async function () {
 
   for (const t of sorted) {
     if (t.childIssues?.length) {
-      // Assign each child individually by scope
-      for (const c of t.childIssues) {
-        if (!(c.storyPoints > 0)) continue;
-        const designers = getEligibleDesignersForTask(t.project, c.is_need_studio);
+      const studioKids = t.childIssues.filter(c => c.is_need_studio  && c.storyPoints > 0);
+      const cwKids     = t.childIssues.filter(c => c.is_need_copywriting && !c.is_need_studio && c.storyPoints > 0);
+      const bauKids    = t.childIssues.filter(c => !c.is_need_studio && !c.is_need_copywriting && c.storyPoints > 0);
+
+      const assignGroup = async (kids, isStudio, isCW) => {
+        if (!kids.length) return;
+        const totalSP  = kids.reduce((s, c) => s + c.storyPoints, 0);
+        const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
+        if (!eligible.length) return;
+        const sub = {};
+        for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+        const designer = pickBestDesigner(sub, totalSP);
+        if (!designer) return;
+        for (const c of kids) {
+          try {
+            await window.api.put(`/api/requests/${t.id}/children/${c.id}`, {
+              assignedTo: { id: designer.id, name: designer.name, email: designer.email }
+            });
+            assigned++;
+          } catch {}
+        }
+        if (!loads[designer.id]) loads[designer.id] = { member: designer, usedSP: 0, maxSP: designer.maxStoryPoints || 10 };
+        loads[designer.id].usedSP += totalSP;
+      };
+
+      await assignGroup(studioKids, true,  false); // Studio: one designer per ticket
+      await assignGroup(cwKids,     false, true);  // CW: one designer per ticket
+
+      // BAU: assign individually by project scope
+      for (const c of bauKids) {
+        const designers = getEligibleDesignersForTask(t.project, false, false);
         if (!designers.length) continue;
         const sub = {};
         for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
@@ -1397,34 +1738,69 @@ function buildModalContent(t) {
       <span class="sp-badge">SP: ${t.storyPoints}</span>
     </div>` : '');
 
-  const childIds = (t.childIssues || []).map(c => c.id).join(',');
-  const childSection = t.childIssues?.length ? `
+  // Designers only see sub-tasks assigned to them; leads/admins see all
+  const allChildren     = t.childIssues || [];
+  const displayChildren = role === 'creative_designer'
+    ? allChildren.filter(c => c.assignedTo?.id === currentUser.id)
+    : allChildren;
+
+  const childIds = displayChildren.map(c => c.id).join(',');
+  const childSectionTitle = role === 'creative_designer'
+    ? `My Sub-tasks (${displayChildren.filter(c=>c.status==='approved').length}/${displayChildren.length} approved)`
+    : `Sub-tasks (${allChildren.filter(c=>c.status==='approved').length}/${allChildren.length} approved)`;
+
+  const childSection = displayChildren.length ? `
     <div class="modal-section">
-      <div class="modal-section-title">Sub-tasks (${t.childIssues.filter(c=>c.status==='approved').length}/${t.childIssues.length} approved)</div>
+      <div class="modal-section-title">${childSectionTitle}</div>
       <div class="modal-children">
-        ${t.childIssues.map(c => `
+        ${displayChildren.map(c => `
           <div class="modal-child-item">
             <div class="modal-child-main">
               ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
               <span class="child-title">${escHtml(c.child_title||'—')}</span>
               ${c.child_due ? `<span class="child-due">Due: ${fmtDate(c.child_due)}</span>` : ''}
               <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
-              ${c.is_need_studio ? `<span class="studio-badge">🎬 Studio</span>` : ''}
+              ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
+              ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
             </div>
             ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
+            ${(role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
+            <div class="child-url-row">
+              <div class="child-url-item">
+                <span class="child-url-label">📝 Draft:</span>
+                <input type="url" class="child-url-input" id="draft-${c.id}"
+                  value="${escHtml(c.draft_url || '')}" placeholder="https://…">
+                <button class="btn btn-sm btn-outline" onclick="saveChildDraftUrl('${t.id}','${c.id}')">Save</button>
+                ${c.draft_url ? `<a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+              </div>
+              <div class="child-url-item">
+                <span class="child-url-label">✅ Final:</span>
+                <input type="url" class="child-url-input" id="final-${c.id}"
+                  value="${escHtml(c.final_url || '')}" placeholder="https://…">
+                <button class="btn btn-sm btn-outline" onclick="saveChildFinalUrl('${t.id}','${c.id}')">Save</button>
+                ${c.final_url ? `<a href="${escHtml(c.final_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+              </div>
+            </div>` : `
+            ${c.draft_url || c.final_url ? `<div class="child-url-row">
+              ${c.draft_url ? `<div class="child-url-item"><span class="child-url-label">📝 Draft:</span><a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">${escHtml(c.draft_url)}</a></div>` : ''}
+              ${c.final_url ? `<div class="child-url-item"><span class="child-url-label">✅ Final:</span><a href="${escHtml(c.final_url)}" target="_blank" class="url-link">${escHtml(c.final_url)}</a></div>` : ''}
+            </div>` : ''}`}
             <div class="child-assign-row">
               <span class="child-sp-label">Assign to:</span>
               ${(role === 'creative_lead' || role === 'admin') ? (() => {
                 const eligible = teamMembers.filter(m => {
                   const ps = m.projects || [];
-                  return c.is_need_studio ? ps.includes('studio') : ps.includes(t.project);
+                  if (c.is_need_studio)       return ps.includes('studio');
+                  if (c.is_need_copywriting)  return ps.includes('copywriting');
+                  return ps.includes(t.project);
                 });
                 return eligible.length
                   ? `<select class="child-assignee-select" onchange="assignChildImmediate('${t.id}','${c.id}',this)">
                        <option value="">— Unassigned —</option>
                        ${eligible.map(m => `<option value="${m.id}" ${c.assignedTo?.id === m.id ? 'selected' : ''}>${escHtml(m.name)}</option>`).join('')}
                      </select>
-                     ${c.is_need_studio ? '<span class="studio-badge" style="font-size:10px">🎬 Studio</span>' : ''}`
+                     ${c.is_need_studio      ? '<span class="studio-badge" style="font-size:10px">🎬 Studio</span>' : ''}
+                     ${c.is_need_copywriting ? '<span class="cw-badge"     style="font-size:10px">✍️ CW</span>'     : ''}`
                   : `<span style="font-size:11px;color:var(--text-muted)">No eligible designers for this scope</span>`;
               })() : `<span class="assignee-tag" style="font-size:11px">${c.assignedTo ? escHtml(c.assignedTo.name) : '—'}</span>`}
             </div>
@@ -1512,8 +1888,54 @@ window.assignChildImmediate = async function (ticketId, childId, sel) {
   const id         = sel.value;
   const m          = id ? teamMembers.find(x => x.id === id) : null;
   const assignedTo = m ? { id: m.id, name: m.name, email: m.email } : null;
+
+  // Studio/CW rule: all studio (or all CW) sub-tasks in the same parent share ONE assignee
+  const t     = tickets.find(x => x.id === ticketId);
+  const child = (t?.childIssues || []).find(c => c.id === childId);
+  const toAssign = child?.is_need_studio
+    ? (t?.childIssues || []).filter(c => c.is_need_studio)
+    : child?.is_need_copywriting
+      ? (t?.childIssues || []).filter(c => c.is_need_copywriting)
+      : [{ id: childId }];
+
+  let lastData = null;
+  for (const c of toAssign) {
+    try {
+      const { data } = await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, { assignedTo });
+      lastData = data;
+    } catch (err) { alert(err.message); return; }
+  }
+
+  if (lastData) {
+    document.getElementById('modalContent').innerHTML = buildModalContent(lastData);
+    setupCommentImagePaste();
+  }
+  await loadTickets();
+};
+
+// Draft URL → saves + auto-moves in_progress → on_review
+window.saveChildDraftUrl = async function (ticketId, childId) {
+  const url = document.getElementById(`draft-${childId}`)?.value?.trim();
+  if (!url) return;
+  const t = tickets.find(x => x.id === ticketId);
+  const c = (t?.childIssues || []).find(x => x.id === childId);
+  const updates = { draft_url: url };
+  if (c?.status === 'in_progress') updates.status = 'on_review';
   try {
-    const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, { assignedTo });
+    const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, updates);
+    document.getElementById('modalContent').innerHTML = buildModalContent(data);
+    setupCommentImagePaste();
+    await loadTickets();
+  } catch (err) { alert(err.message); }
+};
+
+// Final URL → saves + auto-moves to approved
+window.saveChildFinalUrl = async function (ticketId, childId) {
+  const url = document.getElementById(`final-${childId}`)?.value?.trim();
+  if (!url) return;
+  const updates = { final_url: url, status: 'approved' };
+  try {
+    const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, updates);
     document.getElementById('modalContent').innerHTML = buildModalContent(data);
     setupCommentImagePaste();
     await loadTickets();
@@ -1705,8 +2127,44 @@ function buildStatusHistory(t) {
   </div>`;
 }
 
-function statCard(value, label, variant) {
-  return `<div class="stat-card${variant ? ' stat-card-'+variant : ''}"><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div>`;
+function statCard(value, label, variant, subValue, subLabel, subAction, subId, scId) {
+  const sub = subValue != null ? `
+    <div class="stat-sub${subAction ? ' stat-sub-clickable' : ''}"
+      ${subAction ? `onclick="${subAction}" id="${subId || ''}"` : ''}>
+      <span class="stat-sub-value"${scId ? ` id="scs-${scId}"` : ''}>${subValue}</span> ${subLabel || ''}
+    </div>` : '';
+  return `<div class="stat-card${variant ? ' stat-card-'+variant : ''}"${scId ? ` data-sc="${scId}"` : ''}>
+    <div class="stat-value"${scId ? ` id="scv-${scId}"` : ''}>${value}</div>
+    <div class="stat-label">${label}</div>
+    ${sub}
+  </div>`;
+}
+
+// Update lead stat card values in-place (avoids full re-render on filter change)
+function updateLeadStatCards(filtered) {
+  const sv = (id, val) => { const e = document.getElementById(`scv-${id}`); if (e) e.textContent = val; };
+  const ss = (id, val) => { const e = document.getElementById(`scs-${id}`); if (e) e.textContent = val; };
+  const totalSubs = filtered.reduce((s, t) => s + (t.childIssues?.length || 0), 0);
+  const unassSubs = filtered.reduce((s, t) => s + (t.childIssues || []).filter(c => !c.assignedTo).length, 0);
+  sv('total', filtered.length);               ss('total', totalSubs);
+  sv('unas',  filtered.filter(t => !t.assignedTo).length); ss('unas', unassSubs);
+  sv('inp',   filtered.filter(t => t.status === 'in_progress').length);
+  sv('rev',   filtered.filter(t => t.status === 'on_review' || t.status === 'revised').length);
+}
+
+function updateRequesterStatCards(filtered) {
+  const sv = (id, val) => { const e = document.getElementById(`scv-${id}`); if (e) e.textContent = val; };
+  sv('req-total', filtered.length);
+  sv('req-pend',  filtered.filter(t => t.status === 'requested').length);
+  sv('req-act',   filtered.filter(t => t.status !== 'approved').length);
+  sv('req-appr',  filtered.filter(t => t.status === 'approved').length);
+}
+
+function updateDesignerStatCards(filtered) {
+  const sv = (id, val) => { const e = document.getElementById(`scv-${id}`); if (e) e.textContent = val; };
+  sv('ds-total', filtered.length);
+  sv('ds-inp',   filtered.filter(t => t.status === 'in_progress').length);
+  sv('ds-att',   filtered.filter(t => ['need_revision','revision','revised'].includes(t.status)).length);
 }
 
 function emptyState(title, msg, link, linkLabel) {

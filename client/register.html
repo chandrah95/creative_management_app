@@ -85,6 +85,13 @@
         </div>
       </div>
 
+      <!-- Shown when requester is selected -->
+      <div class="form-group" id="requesterScopeGroup" style="display:none">
+        <label>Your Project Scope <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <span class="field-hint">Select the projects you submit requests for. Leave empty to access all projects.</span>
+        <div id="requesterScopeOptions" class="scope-options"></div>
+      </div>
+
       <!-- Shown when creative_designer is selected -->
       <div class="form-group" id="leadPickerGroup" style="display:none">
         <label for="leadId">Your Creative Lead <span class="required">*</span></label>
@@ -121,18 +128,20 @@
 
     // Map scope group names → project IDs
     const SCOPE_PROJECTS = {
-      'In App':    ['ebxc', 'plxc'],
-      'Out App 1': ['smxc', 'daxc'],
-      'Out App 2': ['ocsp', 'pac'],
-      'Studio':    ['studio']
+      'Out App 1':   ['smxc', 'daxc'],
+      'In App':      ['ebxc', 'plxc'],
+      'Out App 2':   ['ocsp', 'pac'],
+      'Studio':      ['studio'],
+      'Copywriting': ['copywriting']
     };
 
     // Visual metadata per scope
     const SCOPE_META = {
-      'In App':    { desc: 'Existing Buyer (EBXC) · Private Label (PLXC)',           color: '#6366f1' },
-      'Out App 1': { desc: 'Social Media (SMXC) · Digital Ads (DAXC)',               color: '#10b981' },
-      'Out App 2': { desc: 'Offline Collateral (OCSP) · Packaging (PAC)',            color: '#ef4444' },
-      'Studio':    { desc: 'Studio Team — physical production support',               color: '#ec4899' }
+      'Out App 1':   { desc: 'Social Media (SMXC) · Digital Ads (DAXC)',               color: '#10b981' },
+      'In App':      { desc: 'Existing Buyer (EBXC) · Private Label (PLXC)',            color: '#6366f1' },
+      'Out App 2':   { desc: 'Offline Collateral (OCSP) · Packaging (PAC)',             color: '#ef4444' },
+      'Studio':      { desc: 'Studio Team — physical production support',                color: '#ec4899' },
+      'Copywriting': { desc: 'Copywriting Team — content, copy & BAU strategy',         color: '#7c3aed' }
     };
 
     // Which scope groups does this lead own?
@@ -147,16 +156,46 @@
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
-    async function onRoleChange(role) {
-      const leadGroup  = document.getElementById('leadPickerGroup');
-      const scopeGroup = document.getElementById('scopePickerGroup');
+    // All regular project IDs for requester scope selection
+    const REQUESTER_PROJECTS = [
+      { id: 'smxc', name: 'Social Media',       code: 'SMXC', color: '#10b981', group: 'Out App 1' },
+      { id: 'daxc', name: 'Digital Ads',         code: 'DAXC', color: '#f59e0b', group: 'Out App 1' },
+      { id: 'ebxc', name: 'Existing Buyer',      code: 'EBXC', color: '#6366f1', group: 'In App' },
+      { id: 'plxc', name: 'Private Label',       code: 'PLXC', color: '#0ea5e9', group: 'In App' },
+      { id: 'ocsp', name: 'Offline Collateral',  code: 'OCSP', color: '#ef4444', group: 'Out App 2' },
+      { id: 'pac',  name: 'Packaging',           code: 'PAC',  color: '#8b5cf6', group: 'Out App 2' }
+    ];
 
-      if (role !== 'creative_designer') {
-        leadGroup.style.display  = 'none';
-        scopeGroup.style.display = 'none';
+    function renderRequesterScopeOptions() {
+      const el = document.getElementById('requesterScopeOptions');
+      el.innerHTML = REQUESTER_PROJECTS.map(p => `
+        <div class="scope-card" onclick="toggleScopeCard(this)" data-scope="${p.id}">
+          <div class="scope-check">✓</div>
+          <span class="scope-dot" style="background:${p.color}"></span>
+          <input type="hidden" name="requester_scope" value="${p.id}" disabled>
+          <div>
+            <div class="scope-card-name">${p.name} <span style="font-size:10px;color:var(--text-muted)">${p.code}</span></div>
+            <div class="scope-card-desc">${p.group}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    async function onRoleChange(role) {
+      const leadGroup          = document.getElementById('leadPickerGroup');
+      const scopeGroup         = document.getElementById('scopePickerGroup');
+      const requesterScopeGroup = document.getElementById('requesterScopeGroup');
+
+      leadGroup.style.display           = 'none';
+      scopeGroup.style.display          = 'none';
+      requesterScopeGroup.style.display = 'none';
+
+      if (role === 'requester') {
+        renderRequesterScopeOptions();
+        requesterScopeGroup.style.display = 'block';
         return;
       }
 
+      if (role !== 'creative_designer') return;
       leadGroup.style.display = 'block';
 
       if (leadsCache) return; // already fetched
@@ -247,13 +286,17 @@
         }
       }
 
-      const scopes = role === 'creative_designer' ? getSelectedScopes() : [];
+      const scopes            = role === 'creative_designer' ? getSelectedScopes() : [];
+      const requesterProjects = role === 'requester'
+        ? [...document.querySelectorAll('#requesterScopeOptions .scope-card.selected')]
+            .map(card => card.dataset.scope)
+        : [];
 
       try {
         const res  = await fetch('/api/auth/register', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ name, email, password, role, leadId, scopes })
+          body:    JSON.stringify({ name, email, password, role, leadId, scopes, projects: requesterProjects })
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);

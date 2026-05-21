@@ -82,6 +82,12 @@ async function register(req, res) {
     }
   }
 
+  // Requester project scope (limits what they can submit and see)
+  if (userRole === 'requester' && Array.isArray(req.body.projects) && req.body.projects.length) {
+    const SAFE = ['smxc','daxc','ebxc','plxc','ocsp','pac'];
+    userData.projects = req.body.projects.filter(p => SAFE.includes(p));
+  }
+
   const newUser = createUser(userData);
   res.status(201).json({ success: true, token: makeToken(newUser, EXPIRES_NORMAL), user: safeUser(newUser) });
 }

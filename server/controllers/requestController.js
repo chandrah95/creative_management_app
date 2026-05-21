@@ -1,6 +1,6 @@
 const {
   getAllRequests, getRequestById, createRequest, updateRequest,
-  addComment, updateChildIssue, getAllUsers, findUserById
+  addComment, updateChildIssue, getAllUsers, findUserById, autoApproveStaleTickets
 } = require('../storage/localAdapter');
 
 const VALID_STATUSES = ['requested', 'in_progress', 'on_review', 'need_revision', 'revision', 'revised', 'approved'];
@@ -39,16 +39,39 @@ function buildFilters(user, query) {
     const dbUser = findUserById(user.id);
     filters.projects = dbUser?.projects || user.projects || [];
   } else if (user.role === 'requester') {
-    filters.submittedBy     = user.id;
-    filters.includeApproved = true;
+    const dbUser = findUserById(user.id);
+    const rp     = dbUser?.projects?.length ? dbUser.projects : (user.projects || []);
+
+    if (query.queue === 'true') {
+      // Project queue mode: all active tickets visible to this requester's projects
+      if (rp.length) {
+        filters.projects = rp; // reuse the lead plural-projects filter mechanism
+      } else {
+        filters.emptyResult = true; // no project scope = empty queue
+      }
+      // approved tickets are not part of the active queue
+    } else {
+      // My requests mode: only tickets this requester submitted
+      filters.submittedBy     = user.id;
+      filters.includeApproved = true;
+      if (rp.length) filters.requesterProjects = rp;
+    }
   }
   return filters;
 }
 
 function checkAccess(user, request) {
   if (user.role === 'admin') return true;
-  if (user.role === 'creative_designer') return request.assignedTo?.id === user.id;
-  if (user.role === 'requester')         return request.submittedBy?.id === user.id;
+  if (user.role === 'creative_designer')
+    return request.assignedTo?.id === user.id ||
+      (request.childIssues || []).some(c => c.assignedTo?.id === user.id);
+  if (user.role === 'requester') {
+    if (request.submittedBy?.id === user.id) return true;
+    // Also allow viewing any ticket in their project scope (for the Project Queue tab)
+    const dbUser = findUserById(user.id);
+    const rp = dbUser?.projects?.length ? dbUser.projects : (user.projects || []);
+    return rp.length > 0 && rp.includes(request.project);
+  }
   if (user.role === 'creative_lead') {
     const dbUser   = findUserById(user.id);
     const projects = (dbUser?.projects?.length ? dbUser.projects : (user.projects || []))
@@ -65,6 +88,7 @@ function actorOf(user) {
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
 function list(req, res) {
+  autoApproveStaleTickets(); // silently promote stale on_review/revised tickets
   const requests = getAllRequests(buildFilters(req.user, req.query));
   res.json({ success: true, data: requests, total: requests.length });
 }
