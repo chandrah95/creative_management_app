@@ -1861,9 +1861,9 @@
         "child_notes": "Studio product shot required on branded set with neon lighting treatment",
         "storyPoints": 2,
         "assignedTo": {
-          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
-          "name": "Designer One",
-          "email": "designer1@company.com"
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
         },
         "comments": [
           {
@@ -1938,7 +1938,11 @@
         "is_need_studio": false,
         "child_notes": "",
         "storyPoints": 2,
-        "assignedTo": null
+        "assignedTo": {
+          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+          "name": "Designer One",
+          "email": "designer1@company.com"
+        }
       },
       {
         "id": "da03c003-0000-4000-8000-300000000033",
@@ -1958,14 +1962,14 @@
         "child_notes": "Studio CTA scene needed: person holding product looking at camera",
         "storyPoints": 2,
         "assignedTo": {
-          "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
-          "name": "Designer One",
-          "email": "designer1@company.com"
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
         }
       }
     ],
     "storyPoints": 6,
-    "updatedAt": "2026-05-22T11:24:06.309Z"
+    "updatedAt": "2026-05-22T12:12:45.232Z"
   },
   {
     "id": "da040004-0000-4000-8000-300000000004",
