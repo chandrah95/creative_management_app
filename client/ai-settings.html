@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creative Hub — AI Settings</title>
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body class="app-page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#6366f1"/><path d="M13 20h14M20 13v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span class="sidebar-brand">Creative Hub</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <div id="sidebarNav" class="project-list"></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-meta">
+          <div class="user-name" id="userName">Loading…</div>
+          <div class="user-email" id="userRole"></div>
+        </div>
+      </div>
+      <button class="btn-icon logout-btn" title="Sign out" onclick="logout()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="app-main">
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <h2 class="page-title">AI Settings</h2>
+        <span class="role-chip" id="roleChip"></span>
+      </div>
+    </header>
+
+    <div class="content-area" id="contentArea">
+
+      <!-- Provider Configuration -->
+      <div class="ai-card" id="configCard">
+        <div class="ai-card-header">
+          <div class="ai-card-icon">⚙️</div>
+          <div>
+            <div class="ai-card-title">AI Provider Configuration</div>
+            <div class="ai-card-subtitle">Connect an AI provider to enable brief enhancement, revision notes, and workload summaries.</div>
+          </div>
+        </div>
+
+        <div class="ai-form">
+          <div class="ai-form-row">
+            <label class="ai-label">Provider</label>
+            <select id="providerSelect" class="ai-select" onchange="onProviderChange()">
+              <option value="">— Select Provider —</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="openai">OpenAI (GPT)</option>
+              <option value="gemini">Google Gemini</option>
+            </select>
+          </div>
+
+          <div class="ai-form-row">
+            <label class="ai-label">Model</label>
+            <select id="modelSelect" class="ai-select">
+              <option value="">— Select provider first —</option>
+            </select>
+          </div>
+
+          <div class="ai-form-row">
+            <label class="ai-label">API Key</label>
+            <input id="apiKeyInput" type="password" class="ai-input" placeholder="Paste your API key here" autocomplete="off" />
+          </div>
+
+          <div class="ai-form-actions">
+            <button class="btn btn-outline btn-sm" onclick="testConnection()">Test Connection</button>
+            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+
+          <div id="configStatus" class="ai-status" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Active Initiatives -->
+      <div class="ai-card">
+        <div class="ai-card-header">
+          <div class="ai-card-icon">✨</div>
+          <div>
+            <div class="ai-card-title">Active AI Initiatives</div>
+            <div class="ai-card-subtitle">These run automatically once a provider is configured.</div>
+          </div>
+        </div>
+        <div class="ai-initiatives">
+          <div class="ai-initiative-item">
+            <div class="ai-initiative-dot dot-blue"></div>
+            <div>
+              <div class="ai-initiative-name">Brief Auto-Enhance</div>
+              <div class="ai-initiative-desc">When a new request is submitted, AI analyzes the brief and appends structured notes (scope, suggested priority, missing info). Stored as <code>ai_brief_note</code> on the ticket.</div>
+            </div>
+          </div>
+          <div class="ai-initiative-item">
+            <div class="ai-initiative-dot dot-orange"></div>
+            <div>
+              <div class="ai-initiative-name">Smart Revision Note</div>
+              <div class="ai-initiative-desc">When a lead moves a ticket to <strong>Need Revision</strong>, AI auto-posts a constructive revision suggestion as a comment. The lead can edit or ignore it.</div>
+            </div>
+          </div>
+          <div class="ai-initiative-item">
+            <div class="ai-initiative-dot dot-green"></div>
+            <div>
+              <div class="ai-initiative-name">Workload Summary</div>
+              <div class="ai-initiative-desc">On-demand summary of each designer's active ticket load, bottlenecks, and recommendations. Generate it below.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workload Summary -->
+      <div class="ai-card">
+        <div class="ai-card-header">
+          <div class="ai-card-icon">📊</div>
+          <div>
+            <div class="ai-card-title">Workload Summary</div>
+            <div class="ai-card-subtitle">AI analysis of current team workload across all active tickets.</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="summaryBtn" onclick="generateSummary()">Generate Summary</button>
+        <div id="summaryOutput" class="ai-summary-output" style="display:none"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/js/api.js"></script>
+  <script type="module" src="/js/ai-settings.js"></script>
+</body>
+</html>

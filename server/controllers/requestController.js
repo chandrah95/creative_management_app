@@ -1,7 +1,11 @@
 const {
   getAllRequests, getRequestById, createRequest, updateRequest,
-  addComment, updateChildIssue, getAllUsers, findUserById, autoApproveStaleTickets
+  addComment, addChildComment, updateChildIssue, getAllUsers, findUserById, autoApproveStaleTickets
 } = require('../storage/localAdapter');
+
+// AI hooks — load once; null if service file is missing (easy removal)
+let aiService = null;
+try { aiService = require('../services/aiService'); } catch {}
 
 const VALID_STATUSES = ['requested', 'in_progress', 'on_review', 'need_revision', 'revision', 'revised', 'approved'];
 
@@ -111,6 +115,13 @@ function create(req, res) {
     submittedBy: { id: req.user.id, email: req.user.email, name: req.user.name }
   });
   res.status(201).json({ success: true, data: newRequest });
+
+  // AI: brief enhancement — non-blocking, fires after response is sent
+  if (aiService) {
+    aiService.enhanceBrief(newRequest).then(note => {
+      if (note) updateRequest(newRequest.id, { ai_brief_note: note });
+    }).catch(() => {});
+  }
 }
 
 function update(req, res) {
@@ -144,6 +155,17 @@ function update(req, res) {
   const changedBy = updates.status ? actorOf(user) : null;
   const updated   = updateRequest(req.params.id, { ...rest, ...updates }, changedBy);
   res.json({ success: true, data: updated });
+
+  // AI: revision note — fires only when status moves TO need_revision
+  if (aiService && updates.status === 'need_revision' && request.status !== 'need_revision') {
+    aiService.draftRevisionNote(updated).then(note => {
+      if (note) addComment(req.params.id, {
+        text: `💡 AI Revision Suggestion: ${note}`,
+        imageData: null,
+        postedBy: { id: 'ai', name: 'AI Assistant', email: '', role: 'ai' }
+      });
+    }).catch(() => {});
+  }
 }
 
 function postComment(req, res) {
@@ -160,6 +182,24 @@ function postComment(req, res) {
     imageData: imageData    || null,
     postedBy:  { id: user.id, name: user.name, email: user.email, role: user.role }
   });
+  res.json({ success: true, data: updated });
+}
+
+function postChildComment(req, res) {
+  const user    = req.user;
+  const request = getRequestById(req.params.id);
+  if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
+  if (!checkAccess(user, request)) return res.status(403).json({ success: false, error: 'Access denied' });
+
+  const { text, imageData } = req.body;
+  if (!text?.trim() && !imageData) return res.status(400).json({ success: false, error: 'Comment text or image is required' });
+
+  const updated = addChildComment(req.params.id, req.params.childId, {
+    text:      text?.trim() || '',
+    imageData: imageData    || null,
+    postedBy:  { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
+  if (!updated) return res.status(404).json({ success: false, error: 'Child issue not found' });
   res.json({ success: true, data: updated });
 }
 
@@ -192,4 +232,4 @@ function getTeamMembers(req, res) {
   res.json({ success: true, data: members });
 }
 
-module.exports = { list, get, create, update, postComment, updateChild, getTeamMembers };
+module.exports = { list, get, create, update, postComment, postChildComment, updateChild, getTeamMembers };

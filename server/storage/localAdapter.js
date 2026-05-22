@@ -247,6 +247,27 @@ function addComment(requestId, comment) {
   return requests[idx];
 }
 
+function addChildComment(requestId, childId, comment) {
+  const requests = readJson(REQUESTS_FILE);
+  const idx      = requests.findIndex(r => r.id === requestId);
+  if (idx === -1) return null;
+  const ci   = requests[idx].childIssues || [];
+  const cidx = ci.findIndex(c => c.id === childId);
+  if (cidx === -1) return null;
+  if (!ci[cidx].comments) ci[cidx].comments = [];
+  const commentObj = {
+    id:       uuidv4(),
+    text:     comment.text,
+    postedAt: new Date().toISOString(),
+    postedBy: comment.postedBy
+  };
+  if (comment.imageData) commentObj.imageData = comment.imageData;
+  ci[cidx].comments.push(commentObj);
+  requests[idx].updatedAt = new Date().toISOString();
+  writeJson(REQUESTS_FILE, requests);
+  return requests[idx];
+}
+
 function updateChildIssue(requestId, childId, updates, changedBy = null) {
   const requests = readJson(REQUESTS_FILE);
   const idx      = requests.findIndex(r => r.id === requestId);
@@ -400,5 +421,5 @@ module.exports = {
   initStorage,
   findUserByEmail, findUserById, getAllUsers, getAllLeads, createUser, updateUserLead, updateUser,
   getAllRequests, getRequestById, createRequest, updateRequest,
-  addComment, updateChildIssue, autoApproveStaleTickets
+  addComment, addChildComment, updateChildIssue, autoApproveStaleTickets
 };

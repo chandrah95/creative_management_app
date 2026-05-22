@@ -8,6 +8,10 @@ let tickets             = [];
 let teamMembers         = [];
 let allLeads            = [];
 let pendingCommentImage  = null;
+let currentModalTicket  = null;
+let childDiscTicketId   = null;
+let childDiscChildId    = null;
+let pendingChildDiscImg = null;
 let donutChartInstance   = null;
 let subtaskFilterActive  = false;
 let requesterActiveTab   = 'mine';  // 'mine' | 'queue'
@@ -146,11 +150,13 @@ async function init() {
     projects = data;
   } catch {}
 
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.csd-panel').forEach(p => { p.style.display = 'none'; });
-  });
-
   buildSidebar();
+  loadNotifications();
+
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('notifWrap');
+    if (wrap && !wrap.contains(e.target)) closeNotifPanel();
+  });
 
   if (currentUser.role === 'creative_lead' || currentUser.role === 'admin') {
     try {
@@ -177,7 +183,33 @@ function buildSidebar() {
     ${canRequest ? `<a class="project-nav-item" href="/form">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       <span class="project-nav-label">New Request</span>
+    </a>` : ''}
+    ${currentUser.role === 'admin' ? `<a class="project-nav-item" href="/ai-settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      <span class="project-nav-label">AI Settings</span>
     </a>` : ''}`;
+
+  if (currentUser.role === 'creative_designer' || currentUser.role === 'requester') {
+    document.getElementById('topBarRight').innerHTML = `
+      <div class="notif-wrap" id="notifWrap">
+        <button class="notif-btn" title="Stuck ticket reminders" onclick="toggleNotifPanel()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </button>
+        <div class="notif-panel" id="notifPanel" style="display:none">
+          <div class="notif-panel-head">
+            <span>Stuck Tickets</span>
+            <button class="notif-refresh" onclick="event.stopPropagation();loadNotifications()" title="Refresh">↻</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-empty">Loading…</div>
+          </div>
+        </div>
+      </div>`;
+  }
 }
 
 async function loadTickets() {
@@ -527,8 +559,7 @@ function designerBubble(t) {
   // Parent status auto-derives from sub-tasks — only show manual move on tickets with no children at all
   const statusActions = !hasAnyChildren && nextStatuses.length ? `
     <div class="ticket-actions">
-      <span class="action-label">Move to:</span>
-      ${nextStatuses.map(s => `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();changeStatus('${t.id}','${s}')">${STATUS_LABELS[s]}</button>`).join('')}
+      ${nextStatuses.map(s => statusTransitionBtn(t.id, s, 'changeStatus')).join('')}
     </div>` : '';
 
   return `
@@ -1142,8 +1173,7 @@ function leadBubble(t, isStudioView = false) {
   // Parent status auto-derives from sub-tasks — only show manual move on tickets without children
   const statusActions = !hasChildren && nextStatuses.length ? `
     <div class="ticket-actions" onclick="event.stopPropagation()">
-      <span class="action-label">Move to:</span>
-      ${nextStatuses.map(s => `<button class="btn btn-sm btn-outline" onclick="changeStatus('${t.id}','${s}')">${STATUS_LABELS[s]}</button>`).join('')}
+      ${nextStatuses.map(s => statusTransitionBtn(t.id, s, 'changeStatus')).join('')}
     </div>` : '';
 
   const childrenLabel = isStudioView
@@ -1598,74 +1628,33 @@ const CHILD_STATUS_COLORS = {
   approved:      { bg: '#dcfce7', color: '#166534', border: '#86efac' }
 };
 
-const CHILD_STATUS_GROUPS = [
-  { label: 'Progress', statuses: ['in_progress', 'on_review'] },
-  { label: 'Revision', statuses: ['need_revision', 'revision', 'revised'] },
-  { label: 'Done',     statuses: ['approved'] }
-];
-
-function buildChildStatusDropdown(ticketId, childId, nextStatuses, isModal = false) {
-  if (!nextStatuses.length) return '';
-  const fn = isModal ? 'selectChildStatusModal' : 'selectChildStatusInline';
-  const groupsHtml = CHILD_STATUS_GROUPS.map((g, gi) => {
-    const avail = g.statuses.filter(s => nextStatuses.includes(s));
-    if (!avail.length) return '';
-    const btns = avail.map(s => {
-      const c = CHILD_STATUS_COLORS[s] || {};
-      return `<button class="csd-option"
-        style="background:${c.bg};color:${c.color};border-color:${c.border}"
-        onclick="event.stopPropagation();${fn}(this,'${ticketId}','${childId}','${s}')">
-        ${STATUS_LABELS[s]}
-      </button>`;
-    }).join('');
-    return `${gi > 0 ? '<hr class="csd-divider">' : ''}
-      <div class="csd-group"><div class="csd-group-label">${g.label}</div>${btns}</div>`;
-  }).filter(Boolean).join('');
-
-  return `<div class="child-status-dropdown" onclick="event.stopPropagation()">
-    <button class="csd-trigger" onclick="event.stopPropagation();toggleCSD(this)">
-      Move to <span class="csd-arrow">▾</span>
-    </button>
-    <div class="csd-panel" style="display:none">${groupsHtml}</div>
-  </div>`;
+function statusTransitionBtn(ticketId, s, fn) {
+  const c = CHILD_STATUS_COLORS[s] || {};
+  const style = c.bg ? `background:${c.bg};color:${c.color};border-color:${c.border}` : '';
+  return `<button class="status-transition-btn" style="${style}"
+    onclick="event.stopPropagation();${fn}('${ticketId}','${s}')">${STATUS_LABELS[s]}</button>`;
 }
 
-window.toggleCSD = function (btn) {
-  const panel  = btn.parentElement.querySelector('.csd-panel');
-  if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
-  document.querySelectorAll('.csd-panel').forEach(p => { p.style.display = 'none'; });
-  if (!isOpen) {
-    panel.style.display = 'block';
-    const br = btn.getBoundingClientRect();
-    const pw = panel.offsetWidth;
-    const ph = panel.offsetHeight;
-    // Prefer above trigger; fall back to below if not enough space
-    const top = br.top > ph + 16 ? br.top - ph - 6 : br.bottom + 6;
-    const left = Math.min(br.left, window.innerWidth - pw - 8);
-    panel.style.top  = `${top}px`;
-    panel.style.left = `${left}px`;
-  }
-};
-
-window.selectChildStatusInline = function (btn, ticketId, childId, status) {
-  btn.closest('.csd-panel').style.display = 'none';
-  changeChildStatus(ticketId, childId, status);
-};
-
-window.selectChildStatusModal = function (btn, ticketId, childId, status) {
-  btn.closest('.csd-panel').style.display = 'none';
-  changeChildStatusModal(ticketId, childId, status);
-};
+function buildChildStatusButtons(ticketId, childId, nextStatuses, isModal = false) {
+  if (!nextStatuses.length) return '';
+  const fn = isModal ? 'changeChildStatusModal' : 'changeChildStatus';
+  const btns = nextStatuses.map(s => {
+    const c = CHILD_STATUS_COLORS[s] || {};
+    const style = c.bg ? `background:${c.bg};color:${c.color};border-color:${c.border}` : '';
+    return `<button class="status-transition-btn" style="${style}"
+      onclick="event.stopPropagation();${fn}('${ticketId}','${childId}','${s}')">${STATUS_LABELS[s]}</button>`;
+  }).join('');
+  return `<div class="child-status-actions" onclick="event.stopPropagation()">${btns}</div>`;
+}
 
 function childStatusSelect(ticketId, c) {
   const next = childNextStatuses(c.status, currentUser.role);
-  return buildChildStatusDropdown(ticketId, c.id, next, false);
+  return buildChildStatusButtons(ticketId, c.id, next, false);
 }
 
 function childStatusSelectModal(ticketId, c) {
   const next = childNextStatuses(c.status, currentUser.role);
-  return buildChildStatusDropdown(ticketId, c.id, next, true);
+  return buildChildStatusButtons(ticketId, c.id, next, true);
 }
 
 // ── Ticket Modal ───────────────────────────────────────────────────────────
@@ -1684,7 +1673,68 @@ window.openTicketModal = async function (id) {
   }
 };
 
+function buildChildDiscussion(ticketId, c) {
+  const comments = c.comments || [];
+  const count    = comments.length;
+  const latest   = comments[count - 1];
+
+  const previewHtml = latest
+    ? `<div class="child-latest-comment">
+        <span class="child-latest-author">${escHtml(latest.postedBy.name)}:</span>
+        <span class="child-latest-text">${escHtml(latest.text || '📎 image')}</span>
+      </div>`
+    : `<span class="child-no-comment">No discussion yet</span>`;
+
+  return `
+    <div class="child-discussion">
+      <div class="child-disc-preview">
+        <span class="child-disc-label">Discussion</span>
+        ${previewHtml}
+        <button class="child-disc-open-btn" onclick="openChildDiscussion('${ticketId}','${c.id}')">
+          ${count > 0 ? `${count} comment${count !== 1 ? 's' : ''} · View` : 'Start'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function buildChildDiscPopupHtml(c) {
+  const comments     = c.comments || [];
+  const commentsHtml = comments.length
+    ? comments.map(cm => `
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">${escHtml(cm.postedBy.name)}</span>
+            <span class="role-chip role-${cm.postedBy.role} role-chip-sm">${ROLE_LABELS[cm.postedBy.role]||cm.postedBy.role}</span>
+            <span class="comment-time">${fmtDatetime(cm.postedAt)}</span>
+          </div>
+          ${cm.text ? `<p class="comment-text">${escHtml(cm.text)}</p>` : ''}
+          ${cm.imageData ? `<img class="comment-img" src="${cm.imageData}" alt="image" onclick="window.open(this.src,'_blank')">` : ''}
+        </div>`).join('')
+    : '<p class="no-comments">No comments yet. Be the first to comment.</p>';
+
+  return `
+    <div class="child-disc-popup">
+      <div class="child-disc-popup-header">
+        <div>
+          <div class="child-disc-popup-sub">Subtask Discussion</div>
+          <div class="child-disc-popup-title">${escHtml(c.child_title || '—')}</div>
+        </div>
+        <button class="modal-close" onclick="closeChildDiscussion()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="child-disc-popup-body" id="childDiscBody">${commentsHtml}</div>
+      <div class="child-disc-popup-form">
+        <div id="childDiscImgPreview"></div>
+        <textarea id="childDiscInput" class="comment-textarea"
+          placeholder="Add a comment… (paste image to attach)" rows="3"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="postChildDiscComment()">Post Comment</button>
+      </div>
+    </div>`;
+}
+
 function buildModalContent(t) {
+  currentModalTicket = t;
   const proj   = projects.find(p => p.id === t.project);
   const title  = t.fields?.title || '(no title)';
   const role   = currentUser.role;
@@ -1696,7 +1746,7 @@ function buildModalContent(t) {
     <div class="modal-section">
       <div class="modal-section-title">Move Status</div>
       <div class="status-actions">
-        ${nextStatuses.map(s => `<button class="btn btn-outline btn-sm" onclick="changeStatusModal('${t.id}','${s}')">${STATUS_LABELS[s]}</button>`).join('')}
+        ${nextStatuses.map(s => statusTransitionBtn(t.id, s, 'changeStatusModal')).join('')}
       </div>
     </div>` : '';
 
@@ -1812,6 +1862,7 @@ function buildModalContent(t) {
                 : `<span class="sp-badge" style="font-size:11px">${c.storyPoints != null ? 'SP: '+c.storyPoints : '—'}</span>`}
             </div>
             ${role !== 'requester' ? childStatusSelectModal(t.id, c) : ''}
+            ${buildChildDiscussion(t.id, c)}
           </div>`).join('')}
       </div>
       ${canEditSP ? `
@@ -1853,6 +1904,7 @@ function buildModalContent(t) {
     </div>
     ${t.fields?.description ? `<div class="modal-section"><div class="modal-section-title">Description</div><p class="modal-text">${escHtml(t.fields.description)}</p></div>` : ''}
     ${t.fields?.notes ? `<div class="modal-section"><div class="modal-section-title">Notes</div><p class="modal-text">${escHtml(t.fields.notes)}</p></div>` : ''}
+    ${t.ai_brief_note ? `<div class="modal-section ai-brief-note-section"><div class="modal-section-title">✨ AI Brief Notes</div><div class="ai-brief-note-body">${escHtml(t.ai_brief_note)}</div></div>` : ''}
     ${statusSection}${assignSection}${spSection}${childSection}
     ${buildStatusHistory(t)}
     <div class="modal-section">
@@ -2108,6 +2160,97 @@ window.postComment = async function (ticketId) {
   catch (err) { alert(err.message); }
 };
 
+window.openChildDiscussion = function (ticketId, childId) {
+  childDiscTicketId = ticketId;
+  childDiscChildId  = childId;
+  const c = (currentModalTicket?.childIssues || []).find(x => x.id === childId);
+  if (!c) return;
+
+  let overlay = document.getElementById('childDiscOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id        = 'childDiscOverlay';
+    overlay.className = 'child-disc-overlay';
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeChildDiscussion(); });
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML    = buildChildDiscPopupHtml(c);
+  overlay.style.display = 'flex';
+  setupChildDiscPaste();
+  const body = overlay.querySelector('#childDiscBody');
+  if (body) body.scrollTop = body.scrollHeight;
+  overlay.querySelector('#childDiscInput')?.focus();
+};
+
+window.closeChildDiscussion = function () {
+  const overlay = document.getElementById('childDiscOverlay');
+  if (overlay) overlay.style.display = 'none';
+  pendingChildDiscImg = null;
+};
+
+window.postChildDiscComment = async function () {
+  const input = document.getElementById('childDiscInput');
+  const text  = input?.value?.trim();
+  if (!text && !pendingChildDiscImg) return;
+  const body = { text: text || '' };
+  if (pendingChildDiscImg) body.imageData = pendingChildDiscImg;
+  try {
+    const { data } = await window.api.post(
+      `/api/requests/${childDiscTicketId}/children/${childDiscChildId}/comments`, body
+    );
+    pendingChildDiscImg = null;
+    // Refresh modal inline preview
+    document.getElementById('modalContent').innerHTML = buildModalContent(data);
+    setupCommentImagePaste();
+    // Re-render popup with fresh child data
+    const c = (data.childIssues || []).find(x => x.id === childDiscChildId);
+    if (c) {
+      const overlay = document.getElementById('childDiscOverlay');
+      if (overlay) {
+        overlay.innerHTML    = buildChildDiscPopupHtml(c);
+        overlay.style.display = 'flex';
+        setupChildDiscPaste();
+        const bd = overlay.querySelector('#childDiscBody');
+        if (bd) bd.scrollTop = bd.scrollHeight;
+        overlay.querySelector('#childDiscInput')?.focus();
+      }
+    }
+  }
+  catch (err) { alert(err.message); }
+};
+
+function setupChildDiscPaste() {
+  const ta = document.getElementById('childDiscInput');
+  if (!ta) return;
+  ta.removeEventListener('paste', handleChildDiscPaste);
+  ta.addEventListener('paste', handleChildDiscPaste);
+}
+
+async function handleChildDiscPaste(e) {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const dataUrl       = await resizeImage(item.getAsFile(), 400);
+      pendingChildDiscImg = dataUrl;
+      const preview       = document.getElementById('childDiscImgPreview');
+      if (preview) {
+        preview.className = 'img-preview-wrap';
+        preview.innerHTML = `<img src="${dataUrl}" alt="Preview">
+          <button class="img-preview-remove" onclick="clearChildDiscImg()" title="Remove">×</button>`;
+      }
+      break;
+    }
+  }
+}
+
+window.clearChildDiscImg = function () {
+  pendingChildDiscImg = null;
+  const preview = document.getElementById('childDiscImgPreview');
+  if (preview) { preview.className = ''; preview.innerHTML = ''; }
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function buildStatusHistory(t) {
@@ -2188,5 +2331,57 @@ function fmtDatetime(str) {
 }
 
 function cap(str) { return str ? str[0].toUpperCase() + str.slice(1) : str; }
+
+// ── Notifications ──────────────────────────────────────────────────────────
+
+window.loadNotifications = async function () {
+  try {
+    const { data } = await window.api.get('/api/notifications/stuck');
+    updateNotifUI(data);
+  } catch {}
+};
+
+function updateNotifUI(items) {
+  const badge = document.getElementById('notifBadge');
+  const list  = document.getElementById('notifList');
+  if (!badge || !list) return;
+
+  if (items.length) {
+    badge.textContent   = items.length > 9 ? '9+' : String(items.length);
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  list.innerHTML = items.length
+    ? items.map(n => `
+        <div class="notif-item" onclick="closeNotifPanel();openTicketModal('${n.id}')">
+          <div class="notif-item-top">
+            ${n.ticketId ? `<span class="notif-ticket-id">${escHtml(n.ticketId)}</span>` : ''}
+            <span class="notif-title">${escHtml(n.title)}</span>
+          </div>
+          <div class="notif-meta">
+            <span class="status-badge status-${n.status} status-sm">${STATUS_LABELS[n.status]||n.status}</span>
+            <span class="notif-days">${n.daysStuck} day${n.daysStuck !== 1 ? 's' : ''} stuck</span>
+          </div>
+        </div>`).join('')
+    : '<div class="notif-empty">No stuck tickets — all good!</div>';
+}
+
+window.toggleNotifPanel = function () {
+  const panel = document.getElementById('notifPanel');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    loadNotifications();
+  } else {
+    panel.style.display = 'none';
+  }
+};
+
+window.closeNotifPanel = function () {
+  const panel = document.getElementById('notifPanel');
+  if (panel) panel.style.display = 'none';
+};
 
 init();

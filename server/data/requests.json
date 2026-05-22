@@ -1813,7 +1813,42 @@
           "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
           "name": "Designer One",
           "email": "designer1@company.com"
-        }
+        },
+        "comments": [
+          {
+            "id": "414e7927-d169-4387-a8b6-6cf246a644c9",
+            "text": "ini harusnya kurang deh harusnya diginiin",
+            "postedAt": "2026-05-22T08:36:02.795Z",
+            "postedBy": {
+              "id": "fc741447-80b5-4f3c-b31c-58663669868f",
+              "name": "Andhika Zefanya",
+              "email": "andhika.zefanya@astronauts.id",
+              "role": "creative_lead"
+            }
+          },
+          {
+            "id": "3d5c15fc-ca53-4984-84f2-6ff87794dd5c",
+            "text": "mending gini gak si, drpd gini?",
+            "postedAt": "2026-05-22T08:36:15.229Z",
+            "postedBy": {
+              "id": "fc741447-80b5-4f3c-b31c-58663669868f",
+              "name": "Andhika Zefanya",
+              "email": "andhika.zefanya@astronauts.id",
+              "role": "creative_lead"
+            }
+          },
+          {
+            "id": "18cae6ab-7eb0-4f4d-af68-468c748f6916",
+            "text": "mending besok kerjain ini dulu deh",
+            "postedAt": "2026-05-22T08:36:29.219Z",
+            "postedBy": {
+              "id": "fc741447-80b5-4f3c-b31c-58663669868f",
+              "name": "Andhika Zefanya",
+              "email": "andhika.zefanya@astronauts.id",
+              "role": "creative_lead"
+            }
+          }
+        ]
       },
       {
         "id": "da03c002-0000-4000-8000-300000000032",
@@ -1863,7 +1898,7 @@
       }
     ],
     "storyPoints": 6,
-    "updatedAt": "2026-05-21T10:11:52.110Z"
+    "updatedAt": "2026-05-22T08:36:29.220Z"
   },
   {
     "id": "da040004-0000-4000-8000-300000000004",
