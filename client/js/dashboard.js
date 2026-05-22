@@ -190,7 +190,7 @@ function buildSidebar() {
       <span class="project-nav-label">AI Settings</span>
     </a>` : ''}`;
 
-  // Bell is injected by renderDesignerView / renderRequesterView after each render
+  // Bell is injected by renderLeadView / renderRequesterView after each render
 }
 
 async function loadTickets() {
@@ -479,8 +479,7 @@ function requesterBubble(t) {
 
 function renderDesignerView() {
   document.getElementById('pageTitle').textContent = 'My Assigned Tickets';
-  document.getElementById('topBarRight').innerHTML = notifBellHtml();
-  loadNotifications();
+  document.getElementById('topBarRight').innerHTML = '';
 
   const area = document.getElementById('contentArea');
   if (!tickets.length) { area.innerHTML = contextEmptyState('creative_designer'); return; }
@@ -600,7 +599,8 @@ function renderLeadView() {
   destroyCharts();
 
   document.getElementById('pageTitle').textContent = 'Team Tickets';
-  document.getElementById('topBarRight').innerHTML = '';
+  document.getElementById('topBarRight').innerHTML = notifBellHtml();
+  loadNotifications();
 
   const area       = document.getElementById('contentArea');
   const unassigned = tickets.filter(t => !t.assignedTo);
@@ -2476,9 +2476,9 @@ function notifBellHtml() {
       </svg>
       <span class="notif-badge" id="notifBadge" style="display:none" aria-label="unread notifications">0</span>
     </button>
-    <div class="notif-panel" id="notifPanel" style="display:none" role="region" aria-label="Stuck ticket notifications">
+    <div class="notif-panel" id="notifPanel" style="display:none" role="region" aria-label="Tickets awaiting approval">
       <div class="notif-panel-head">
-        <span>Stuck Tickets</span>
+        <span>Needs Approval</span>
         <button class="notif-refresh" onclick="event.stopPropagation();loadNotifications()" title="Refresh" aria-label="Refresh notifications">↻</button>
       </div>
       <div class="notif-list" id="notifList"><div class="notif-empty">Loading…</div></div>
@@ -2507,23 +2507,24 @@ function updateNotifUI(items) {
 
   list.innerHTML = items.length
     ? items.map(n => {
-        const urgencyClass = n.daysStuck >= 4 ? 'notif-item-danger' : 'notif-item-warning';
+        const urgencyClass = n.daysWaiting >= 2 ? 'notif-item-danger' : 'notif-item-warning';
+        const waitLabel    = n.daysWaiting === 0 ? 'Today' : `${n.daysWaiting} day${n.daysWaiting !== 1 ? 's' : ''} waiting`;
         return `
         <div class="notif-item ${urgencyClass}" role="button" tabindex="0"
              onclick="closeNotifPanel();openTicketModal('${n.id}')"
              onkeydown="if(event.key==='Enter'||event.key===' '){closeNotifPanel();openTicketModal('${n.id}')}"
-             aria-label="View stuck ticket: ${escHtml(n.title)}, stuck for ${n.daysStuck} day${n.daysStuck !== 1 ? 's' : ''}">
+             aria-label="Needs approval: ${escHtml(n.title)}">
           <div class="notif-item-top">
             ${n.ticketId ? `<span class="notif-ticket-id">${escHtml(n.ticketId)}</span>` : ''}
             <span class="notif-title">${escHtml(n.title)}</span>
           </div>
           <div class="notif-meta">
             <span class="status-badge status-${n.status} status-sm">${STATUS_LABELS[n.status]||n.status}</span>
-            <span class="notif-days">${n.daysStuck} day${n.daysStuck !== 1 ? 's' : ''} stuck</span>
+            <span class="notif-days">${waitLabel}</span>
           </div>
         </div>`;
       }).join('')
-    : '<div class="notif-empty">No stuck tickets — all good!</div>';
+    : '<div class="notif-empty">No tickets awaiting approval.</div>';
 }
 
 window.toggleNotifPanel = function () {

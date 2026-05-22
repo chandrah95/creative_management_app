@@ -1,13 +1,12 @@
-const { getAllRequests } = require('../storage/localAdapter');
+const { getAllRequests, findUserById } = require('../storage/localAdapter');
 
-const STUCK_STATUSES  = new Set(['on_review', 'revised']);
-const STUCK_MS        = 4 * 24 * 60 * 60 * 1000; // 4 days
+const REVIEW_STATUSES = new Set(['on_review', 'revised']);
 
 function getStuck(req, res) {
   const { role, id } = req.user;
 
-  // Only relevant for designer and requester — others get an empty list
-  if (role !== 'creative_designer' && role !== 'requester') {
+  // Only relevant for creative leads (need to act) and requesters (their tickets awaiting approval)
+  if (role !== 'creative_lead' && role !== 'requester') {
     return res.json({ success: true, data: [] });
   }
 
@@ -16,36 +15,35 @@ function getStuck(req, res) {
   const result = [];
 
   for (const r of all) {
-    if (!STUCK_STATUSES.has(r.status)) continue;
+    if (!REVIEW_STATUSES.has(r.status)) continue;
 
-    // Ownership filter
-    if (role === 'creative_designer') {
-      const mine = r.assignedTo?.id === id ||
-        (r.childIssues || []).some(c => c.assignedTo?.id === id);
-      if (!mine) continue;
+    // Role-based scope filter
+    if (role === 'creative_lead') {
+      const dbUser   = findUserById(id);
+      const projects = (dbUser?.projects || []).filter(p => p !== 'studio' && p !== 'copywriting');
+      if (!projects.includes(r.project)) continue;
     } else {
+      // requester: only their own submitted tickets
       if (r.submittedBy?.id !== id) continue;
     }
 
-    // Find when the ticket last entered its current status
+    // How long has it been waiting in this status (informational, no threshold)
     const hist  = r.statusHistory || [];
     const entry = [...hist].reverse().find(h => h.to === r.status);
-    if (!entry?.changedAt) continue;
-
-    const elapsed = now - new Date(entry.changedAt).getTime();
-    if (elapsed < STUCK_MS) continue;
+    const elapsed     = entry?.changedAt ? now - new Date(entry.changedAt).getTime() : 0;
+    const daysWaiting = Math.floor(elapsed / (1000 * 60 * 60 * 24));
 
     result.push({
-      id:       r.id,
-      ticketId: r.ticketId,
-      title:    r.fields?.title || '(no title)',
-      status:   r.status,
-      project:  r.project,
-      daysStuck: Math.floor(elapsed / (1000 * 60 * 60 * 24))
+      id:          r.id,
+      ticketId:    r.ticketId,
+      title:       r.fields?.title || '(no title)',
+      status:      r.status,
+      project:     r.project,
+      daysWaiting
     });
   }
 
-  result.sort((a, b) => b.daysStuck - a.daysStuck);
+  result.sort((a, b) => b.daysWaiting - a.daysWaiting);
   res.json({ success: true, data: result });
 }
 
