@@ -27,11 +27,10 @@ async function login(req, res) {
   const user = findUserByEmail(email.toLowerCase().trim());
   if (!user) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
-  // Support plain-text passwords (dev accounts) alongside bcrypt hashes
-  const isBcrypt = user.password.startsWith('$2a$') || user.password.startsWith('$2b$');
+  const isBcrypt = user.password?.startsWith('$2');
   const match    = isBcrypt
     ? await bcrypt.compare(password, user.password)
-    : password === user.password;
+    : password === user.password; // fallback for any unmigrated plain-text accounts
   if (!match) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
   const expiresIn = rememberMe ? EXPIRES_REMEMBER : EXPIRES_NORMAL;
@@ -60,12 +59,19 @@ async function register(req, res) {
   // Designer: assign to lead and restrict projects to selected scopes
   if (userRole === 'creative_designer' && req.body.leadId) {
     const lead = findUserById(req.body.leadId);
-    if (lead && lead.role === 'creative_lead') {
+    if (!lead) {
+      return res.status(400).json({ success: false, error: 'The selected Creative Lead does not exist. Please refresh and try again.' });
+    }
+    if (lead.role !== 'creative_lead') {
+      return res.status(400).json({ success: false, error: 'Selected user is not a Creative Lead.' });
+    }
+    if (true) { // lead existence and role validated above
       const SCOPE_PROJECTS = {
-        'In App':    ['ebxc', 'plxc'],
-        'Out App 1': ['smxc', 'daxc'],
-        'Out App 2': ['ocsp', 'pac'],
-        'Studio':    ['studio']
+        'In App':       ['ebxc', 'plxc'],
+        'Out App 1':    ['smxc', 'daxc'],
+        'Out App 2':    ['ocsp', 'pac'],
+        'Studio':       ['studio'],
+        'Copywriting':  ['copywriting']
       };
       const scopes      = Array.isArray(req.body.scopes) ? req.body.scopes : [];
       const leadProjects = lead.projects || [];

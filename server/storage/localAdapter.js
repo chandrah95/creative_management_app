@@ -8,10 +8,23 @@ const USERS_FILE  = path.join(DATA_DIR, 'users.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 
 function readJson(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    console.error(`[storage] readJson failed for ${path.basename(file)}:`, e.message);
+    return [];
+  }
 }
 function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  const tmp = file + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    console.error(`[storage] writeJson failed for ${path.basename(file)}:`, e.message);
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
 }
 
 function initStorage() {
@@ -49,7 +62,6 @@ function seedDefaultUsers() {
     }
   }
 
-  // Core accounts — plain-text passwords for dev, only added if missing
   const seeds = [
     { email:'andhika.zefanya@astronauts.id', password:'lead123',    name:'Andhika Zefanya',  role:'creative_lead',     projects:['smxc','daxc','studio','copywriting'], department:'Out App 1 & Studio' },
     { email:'vellindia@company.com',          password:'lead123',    name:'Vellindia',         role:'creative_lead',     projects:['ebxc','plxc','ocsp','pac'],           department:'In App & Out App 2' },
@@ -62,8 +74,14 @@ function seedDefaultUsers() {
   ];
 
   for (const seed of seeds) {
-    if (!users.find(u => u.email === seed.email)) {
-      users.push({ id: uuidv4(), ...seed });
+    const existing = users.find(u => u.email === seed.email);
+    if (!existing) {
+      const { password, ...rest } = seed;
+      users.push({ id: uuidv4(), ...rest, password: bcrypt.hashSync(password, 10) });
+      updated = true;
+    } else if (existing.password && !existing.password.startsWith('$2')) {
+      // Migrate plain-text password to bcrypt hash
+      existing.password = bcrypt.hashSync(existing.password, 10);
       updated = true;
     }
   }
@@ -230,6 +248,7 @@ function updateRequest(id, updates, changedBy = null) {
 }
 
 function addComment(requestId, comment) {
+  if (!comment.postedBy?.id) return null;
   const requests = readJson(REQUESTS_FILE);
   const idx      = requests.findIndex(r => r.id === requestId);
   if (idx === -1) return null;
@@ -248,6 +267,7 @@ function addComment(requestId, comment) {
 }
 
 function addChildComment(requestId, childId, comment) {
+  if (!comment.postedBy?.id) return null;
   const requests = readJson(REQUESTS_FILE);
   const idx      = requests.findIndex(r => r.id === requestId);
   if (idx === -1) return null;
@@ -384,7 +404,11 @@ function autoApproveStaleTickets() {
   for (const r of requests) {
     const checkStale = (item) => {
       if (!['on_review','revised'].includes(item.status)) return false;
-      const last = item.statusHistory?.[item.statusHistory.length - 1]?.changedAt;
+      // Find the most recent history entry where `to` matches the current status
+      // (not just the last entry, which may be a later transition on a different status)
+      const history = item.statusHistory || [];
+      const relevant = history.filter(h => h.to === item.status);
+      const last = relevant.length ? relevant[relevant.length - 1].changedAt : null;
       return last && (now - new Date(last)) > THRESHOLD;
     };
     const doApprove = (item) => {
@@ -405,7 +429,16 @@ function autoApproveStaleTickets() {
         (STATUS_RANK[c.status] ?? 99) < (STATUS_RANK[min] ?? 99) ? c.status : min,
         r.childIssues[0].status
       );
-      if (minStatus !== r.status) { r.status = minStatus; changed = true; }
+      if (minStatus !== r.status) {
+        if (!r.statusHistory) r.statusHistory = [];
+        r.statusHistory.push({
+          from: r.status, to: minStatus,
+          changedAt: now.toISOString(),
+          changedBy: { name: 'System (auto from sub-tasks)', role: 'system' }
+        });
+        r.status = minStatus;
+        changed = true;
+      }
     } else {
       if (checkStale(r)) doApprove(r);
     }

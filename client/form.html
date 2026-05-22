@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Creative Request Platform — New Request</title>
+  <title>Creative Hub — New Request</title>
   <link rel="stylesheet" href="/css/main.css" />
   <link rel="stylesheet" href="/css/form.css" />
 </head>
 <body class="app-page">
+<a class="skip-link" href="#formContainer">Skip to main content</a>
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -35,8 +36,11 @@
   <div class="app-main">
     <header class="top-bar">
       <div class="top-bar-left">
+        <button class="sidebar-toggle" aria-label="Open navigation menu" onclick="toggleMobileSidebar()" aria-expanded="false" id="sidebarToggleBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="breadcrumb-sep"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="breadcrumb-sep" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         <span id="breadcrumbProject" class="breadcrumb-current">New Request</span>
       </div>
     </header>
@@ -104,6 +108,9 @@
     </div>
   </div>
 
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()" aria-hidden="true"></div>
+
   <script type="module" src="/js/api.js"></script>
   <script type="module" src="/js/form.js"></script>
   <script>
@@ -116,6 +123,29 @@
         window.location.href = '/dashboard';
       }
     })();
+
+    // Mobile sidebar toggle
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const btn     = document.getElementById('sidebarToggleBtn');
+      const isOpen  = sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible', isOpen);
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      btn.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+    }
+    function closeMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const btn     = document.getElementById('sidebarToggleBtn');
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.setAttribute('aria-label', 'Open navigation menu');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeMobileSidebar();
+    });
   </script>
 </body>
 </html>

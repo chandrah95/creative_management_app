@@ -21,6 +21,7 @@ let statusChartInstance = null;
 
 // Cross-filter: set by clicking a chart element; each filters the other charts + ticket list
 let crossFilter = { designerId: null, statusKey: null };
+let donutMode   = 'tasks'; // 'tasks' | 'subtasks'
 
 // Chart axis descriptors — populated in initCharts(), used by update functions
 let donutEntries = []; // [[designerId, {name,...}], ...]
@@ -137,8 +138,8 @@ async function init() {
   if (!raw) return;
   currentUser = JSON.parse(raw);
 
-  document.getElementById('userName').textContent   = currentUser.name;
-  document.getElementById('userAvatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('userName').textContent   = currentUser.name || 'User';
+  document.getElementById('userAvatar').textContent = (currentUser.name || '?')[0].toUpperCase();
   document.getElementById('userRole').textContent   = ROLE_LABELS[currentUser.role] || currentUser.role;
 
   const chip = document.getElementById('roleChip');
@@ -189,37 +190,18 @@ function buildSidebar() {
       <span class="project-nav-label">AI Settings</span>
     </a>` : ''}`;
 
-  if (currentUser.role === 'creative_designer' || currentUser.role === 'requester') {
-    document.getElementById('topBarRight').innerHTML = `
-      <div class="notif-wrap" id="notifWrap">
-        <button class="notif-btn" title="Stuck ticket reminders" onclick="toggleNotifPanel()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 01-3.46 0"/>
-          </svg>
-          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
-        </button>
-        <div class="notif-panel" id="notifPanel" style="display:none">
-          <div class="notif-panel-head">
-            <span>Stuck Tickets</span>
-            <button class="notif-refresh" onclick="event.stopPropagation();loadNotifications()" title="Refresh">↻</button>
-          </div>
-          <div class="notif-list" id="notifList">
-            <div class="notif-empty">Loading…</div>
-          </div>
-        </div>
-      </div>`;
-  }
+  // Bell is injected by renderDesignerView / renderRequesterView after each render
 }
 
 async function loadTickets() {
-  document.getElementById('contentArea').innerHTML = '<div class="loading-state">Loading…</div>';
+  document.getElementById('contentArea').innerHTML = '<div class="loading-state" aria-live="polite" aria-busy="true">Loading tickets…</div>';
   try {
     const { data } = await window.api.get('/api/requests');
     tickets = data;
     renderView();
   } catch {
-    document.getElementById('contentArea').innerHTML = '<div class="loading-state">Failed to load tickets.</div>';
+    document.getElementById('contentArea').innerHTML =
+      '<div class="loading-state error-state" role="alert">Unable to load tickets. Please refresh the page or try again.</div>';
   }
 }
 
@@ -242,15 +224,16 @@ function renderRequesterView() {
   document.getElementById('pageTitle').textContent = 'Dashboard';
   document.getElementById('topBarRight').innerHTML = `<a href="/form" class="btn btn-primary">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-    New Request</a>`;
+    New Request</a>${notifBellHtml()}`;
+  loadNotifications();
 
   const area = document.getElementById('contentArea');
   area.innerHTML = `
-    <div class="req-tab-bar">
-      <button class="req-tab${requesterActiveTab === 'mine'  ? ' active' : ''}" onclick="switchRequesterTab('mine')">📋 My Requests</button>
-      <button class="req-tab${requesterActiveTab === 'queue' ? ' active' : ''}" onclick="switchRequesterTab('queue')">📊 Project Queue</button>
+    <div class="req-tab-bar" role="tablist" aria-label="Request views">
+      <button class="req-tab${requesterActiveTab === 'mine'  ? ' active' : ''}" role="tab" aria-selected="${requesterActiveTab === 'mine'}" onclick="switchRequesterTab('mine')">My Requests</button>
+      <button class="req-tab${requesterActiveTab === 'queue' ? ' active' : ''}" role="tab" aria-selected="${requesterActiveTab === 'queue'}" onclick="switchRequesterTab('queue')">Project Queue</button>
     </div>
-    <div id="reqTabContent"></div>`;
+    <div id="reqTabContent" role="tabpanel"></div>`;
 
   if (requesterActiveTab === 'mine') {
     renderMineTab();
@@ -266,7 +249,7 @@ function renderMineTab() {
   if (!el) return;
 
   if (!tickets.length) {
-    el.innerHTML = emptyState('No requests yet', 'Submit your first creative request.', '/form', 'New Request');
+    el.innerHTML = contextEmptyState('requester', 'mine');
     return;
   }
 
@@ -330,13 +313,13 @@ window.filterRequesterTickets = function () {
 async function renderQueueTab() {
   const el = document.getElementById('reqTabContent');
   if (!el) return;
-  el.innerHTML = '<div class="loading-state">Loading project queue…</div>';
+  el.innerHTML = '<div class="loading-state" aria-busy="true">Loading project queue…</div>';
   try {
     const { data } = await window.api.get('/api/requests?queue=true');
     queueTickets = data;
     renderQueueContent();
   } catch {
-    el.innerHTML = '<div class="loading-state">Failed to load project queue.</div>';
+    el.innerHTML = '<div class="loading-state error-state" role="alert">Unable to load project queue. Please try again.</div>';
   }
 }
 
@@ -345,9 +328,7 @@ function renderQueueContent() {
   if (!el) return;
 
   if (!queueTickets.length) {
-    el.innerHTML = `<div class="empty-state-full"><div class="empty-icon">📭</div>
-      <h3>No tickets in queue</h3>
-      <p>No active tickets found for your project(s).</p></div>`;
+    el.innerHTML = contextEmptyState('requester', 'queue');
     return;
   }
 
@@ -450,9 +431,16 @@ window.filterQueueTickets = function () {
 
 window.switchRequesterTab = async function (tab) {
   requesterActiveTab = tab;
-  document.querySelectorAll('.req-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.req-tab').forEach(b => {
-    if (b.textContent.toLowerCase().includes(tab === 'mine' ? 'my' : 'queue')) b.classList.add('active');
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  document.querySelectorAll('.req-tab').forEach(b => {
+    const isTarget = b.textContent.toLowerCase().includes(tab === 'mine' ? 'my' : 'queue');
+    if (isTarget) {
+      b.classList.add('active');
+      b.setAttribute('aria-selected', 'true');
+    }
   });
   if (tab === 'mine') {
     renderMineTab();
@@ -491,10 +479,11 @@ function requesterBubble(t) {
 
 function renderDesignerView() {
   document.getElementById('pageTitle').textContent = 'My Assigned Tickets';
-  document.getElementById('topBarRight').innerHTML = '';
+  document.getElementById('topBarRight').innerHTML = notifBellHtml();
+  loadNotifications();
 
   const area = document.getElementById('contentArea');
-  if (!tickets.length) { area.innerHTML = emptyState('No tickets assigned', 'Your creative lead will assign tickets to you shortly.'); return; }
+  if (!tickets.length) { area.innerHTML = contextEmptyState('creative_designer'); return; }
 
   const inP = tickets.filter(t => t.status === 'in_progress').length;
   const att = tickets.filter(t => ['need_revision','revision','revised'].includes(t.status)).length;
@@ -694,17 +683,23 @@ function renderLeadView() {
     <!-- ③ Charts -->
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">Ticket Allocation by Designer</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="chart-title" style="margin-bottom:0">Ticket Allocation by Designer</div>
+          <div class="donut-mode-btns">
+            <button class="donut-mode-btn active" id="donutModeTask" onclick="setDonutMode('tasks')">Tasks</button>
+            <button class="donut-mode-btn" id="donutModeSub"  onclick="setDonutMode('subtasks')">Sub-tasks</button>
+          </div>
+        </div>
         <div class="chart-donut-wrap"><canvas id="donutChart" width="240" height="240"></canvas></div>
         <div id="donutDrilldown" class="donut-drilldown" style="display:none"></div>
-        <p class="chart-hint">Click a slice to cross-filter</p>
+        <p class="chart-hint">⚡ Click a slice to cross-filter</p>
       </div>
       <div class="chart-card">
         <div class="chart-title">Workload by Story Points</div>
         <div class="bar-chart-wrap" id="barChartWrap" style="position:relative;height:160px">
           <canvas id="barChart"></canvas>
         </div>
-        <p class="chart-hint">Click a bar to cross-filter by designer</p>
+        <p class="chart-hint">⚡ Click a bar to cross-filter by designer</p>
       </div>
     </div>
 
@@ -713,7 +708,7 @@ function renderLeadView() {
       <div style="position:relative;height:180px">
         <canvas id="statusChart"></canvas>
       </div>
-      <p class="chart-hint">Click a bar to cross-filter by status</p>
+      <p class="chart-hint">⚡ Click a bar to cross-filter by status</p>
     </div>
 
     ${teamMembers.length ? `
@@ -781,10 +776,20 @@ function getDropdownFilteredTickets() {
   return list;
 }
 
+// Returns parent tickets where a designer has work — via subtasks OR direct assignment
+function ticketsForDesigner(list, designerId) {
+  return list.filter(t =>
+    t.childIssues?.length
+      ? t.childIssues.some(c =>
+          designerId === '__unassigned__' ? !c.assignedTo : c.assignedTo?.id === designerId
+        )
+      : designerId === '__unassigned__' ? !t.assignedTo : t.assignedTo?.id === designerId
+  );
+}
+
 // Applies cross-filter on top of a base list
 function applyCrossFilter(list) {
-  if (crossFilter.designerId === '__unassigned__') list = list.filter(t => !t.assignedTo);
-  else if (crossFilter.designerId) list = list.filter(t => t.assignedTo?.id === crossFilter.designerId);
+  if (crossFilter.designerId) list = ticketsForDesigner(list, crossFilter.designerId);
   if (crossFilter.statusKey) list = list.filter(t => t.status === crossFilter.statusKey);
   return list;
 }
@@ -808,10 +813,8 @@ window.applyAllFilters = function () {
 
   // Status chart: filtered by designer cross-filter (but NOT status cross-filter —
   // status selection is shown as a visual highlight on that chart)
-  const statusSubset = crossFilter.designerId === '__unassigned__'
-    ? base.filter(t => !t.assignedTo)
-    : crossFilter.designerId
-    ? base.filter(t => t.assignedTo?.id === crossFilter.designerId)
+  const statusSubset = crossFilter.designerId
+    ? ticketsForDesigner(base, crossFilter.designerId)
     : base;
   updateStatusChartData(statusSubset);
 
@@ -883,12 +886,23 @@ function hideDrilldown() {
 
 // ── Chart data updaters (in-place, no destroy) ─────────────────────────────
 
+function subCountForDesigner(subset, designerId) {
+  let n = 0;
+  for (const t of subset) {
+    const ch = t.childIssues || [];
+    if (ch.length > 0) {
+      n += ch.filter(c => designerId === '__unassigned__' ? !c.assignedTo : c.assignedTo?.id === designerId).length;
+    } else {
+      if (designerId === '__unassigned__' ? !t.assignedTo : t.assignedTo?.id === designerId) n++;
+    }
+  }
+  return n;
+}
+
 function updateDonutChartData(subset) {
   if (!donutChartInstance || !donutEntries.length) return;
   const newCounts = donutEntries.map(([id]) =>
-    id === '__unassigned__'
-      ? subset.filter(t => !t.assignedTo).length
-      : subset.filter(t => t.assignedTo?.id === id).length
+    donutMode === 'tasks' ? ticketsForDesigner(subset, id).length : subCountForDesigner(subset, id)
   );
   donutChartInstance.data.datasets[0].data = newCounts;
   // Dim non-selected slices when a designer is selected
@@ -902,10 +916,19 @@ function updateDonutChartData(subset) {
 function updateBarChartData(subset) {
   if (!barChartInstance || !barEntries.length) return;
   const newSP = barEntries.map(([id]) => {
-    const rows = id === '__unassigned__'
-      ? subset.filter(t => !t.assignedTo)
-      : subset.filter(t => t.assignedTo?.id === id);
-    return rows.reduce((s, t) => s + (t.storyPoints || 0), 0);
+    if (id === '__unassigned__') {
+      return ticketsForDesigner(subset, id).reduce((s, t) => s + (t.storyPoints || 0), 0);
+    }
+    let sp = 0;
+    for (const t of subset) {
+      const ch = t.childIssues || [];
+      if (ch.length > 0) {
+        for (const c of ch) { if (c.assignedTo?.id === id) sp += (c.storyPoints || 0); }
+      } else {
+        if (t.assignedTo?.id === id) sp += (t.storyPoints || 0);
+      }
+    }
+    return sp;
   });
   barChartInstance.data.datasets[0].data = newSP;
   // Dim non-selected bars when a designer is selected
@@ -922,7 +945,21 @@ function updateBarChartData(subset) {
 
 function updateStatusChartData(subset) {
   if (!statusChartInstance || !statusKeys.length) return;
-  const newCounts = statusKeys.map(s => subset.filter(t => t.status === s).length);
+  const filterDesigner = (crossFilter.designerId && crossFilter.designerId !== '__unassigned__')
+    ? crossFilter.designerId : null;
+  const newCounts = statusKeys.map(s => {
+    let n = 0;
+    for (const t of subset) {
+      const ch = t.childIssues || [];
+      if (ch.length > 0) {
+        const relevant = filterDesigner ? ch.filter(c => c.assignedTo?.id === filterDesigner) : ch;
+        n += relevant.filter(c => c.status === s).length;
+      } else {
+        if (t.status === s) n++;
+      }
+    }
+    return n;
+  });
   statusChartInstance.data.datasets[0].data = newCounts;
   // Dim non-selected bars when a status is selected
   statusChartInstance.data.datasets[0].backgroundColor = statusKeys.map((s, i) => {
@@ -938,6 +975,14 @@ function updateStatusChartData(subset) {
   statusChartInstance.update('none');
 }
 
+window.setDonutMode = function (mode) {
+  if (donutMode === mode) return;
+  donutMode = mode;
+  document.getElementById('donutModeTask')?.classList.toggle('active', mode === 'tasks');
+  document.getElementById('donutModeSub')?.classList.toggle('active', mode === 'subtasks');
+  applyAllFilters();
+};
+
 // ── Charts (initial creation) ──────────────────────────────────────────────
 
 function initCharts() {
@@ -948,22 +993,35 @@ function initCharts() {
   const statusCanvas = document.getElementById('statusChart');
   if (!donutCanvas || !barCanvas || !statusCanvas) return;
 
-  // Build designer aggregation map
+  // Build designer aggregation — task count (parent tickets) + subtask count
   const designerData = {};
   for (const m of teamMembers) {
-    designerData[m.id] = { name: m.name, count: 0, storyPoints: 0 };
+    designerData[m.id] = { name: m.name, count: 0, subtaskCount: 0, storyPoints: 0 };
   }
-  designerData['__unassigned__'] = { name: 'Unassigned', count: 0, storyPoints: 0 };
+  designerData['__unassigned__'] = { name: 'Unassigned', count: 0, subtaskCount: 0, storyPoints: 0 };
 
   for (const t of tickets) {
-    const key = t.assignedTo?.id || '__unassigned__';
-    if (!designerData[key]) designerData[key] = { name: t.assignedTo?.name || 'Unknown', count: 0, storyPoints: 0 };
-    designerData[key].count++;
-    designerData[key].storyPoints += (t.storyPoints || 0);
+    const children = t.childIssues || [];
+    if (children.length > 0) {
+      const seen = {};
+      for (const c of children) {
+        const key = c.assignedTo?.id || '__unassigned__';
+        if (!designerData[key]) designerData[key] = { name: c.assignedTo?.name || 'Unknown', count: 0, subtaskCount: 0, storyPoints: 0 };
+        designerData[key].storyPoints  += (c.storyPoints || 0);
+        designerData[key].subtaskCount += 1;
+        if (!seen[key]) { seen[key] = true; designerData[key].count++; }
+      }
+    } else {
+      const key = t.assignedTo?.id || '__unassigned__';
+      if (!designerData[key]) designerData[key] = { name: t.assignedTo?.name || 'Unknown', count: 0, subtaskCount: 0, storyPoints: 0 };
+      designerData[key].count++;
+      designerData[key].subtaskCount += 1;
+      designerData[key].storyPoints  += (t.storyPoints || 0);
+    }
   }
 
-  // Persist axis descriptors at module scope so updaters can use them
-  donutEntries = Object.entries(designerData).filter(([, d]) => d.count > 0);
+  // Include designers that have work in EITHER mode
+  donutEntries = Object.entries(designerData).filter(([, d]) => d.count > 0 || d.subtaskCount > 0);
   barEntries   = Object.entries(designerData).filter(([k]) => k !== '__unassigned__' || designerData[k].count > 0);
   statusKeys   = Object.keys(STATUS_LABELS).filter(s => s !== 'approved');
   donutColors  = donutEntries.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
@@ -982,7 +1040,7 @@ function initCharts() {
     data: {
       labels: donutEntries.map(([, d]) => d.name),
       datasets: [{
-        data:            donutEntries.map(([, d]) => d.count),
+        data:            donutEntries.map(([, d]) => donutMode === 'tasks' ? d.count : d.subtaskCount),
         backgroundColor: donutColors,
         borderWidth:     2,
         borderColor:     '#fff',
@@ -994,7 +1052,10 @@ function initCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend:  { position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} ticket${ctx.raw !== 1 ? 's' : ''}` } }
+        tooltip: { callbacks: { label: ctx => {
+          const unit = donutMode === 'tasks' ? 'ticket' : 'sub-task';
+          return ` ${ctx.label}: ${ctx.raw} ${unit}${ctx.raw !== 1 ? 's' : ''}`;
+        }}}
       },
       onHover: hoverCursor,
       onClick: (_evt, elements) => {
@@ -1006,12 +1067,8 @@ function initCharts() {
           hideDrilldown();
         } else {
           crossFilter.designerId = designerId;
-          // Build drilldown from current base (dropdown-filtered) tickets
           const base = getDropdownFilteredTickets();
-          const sub  = designerId === '__unassigned__'
-            ? base.filter(t => !t.assignedTo)
-            : base.filter(t => t.assignedTo?.id === designerId);
-          showDonutDrilldown(entry.name, donutColors[idx], sub);
+          showDonutDrilldown(entry.name, donutColors[idx], ticketsForDesigner(base, designerId));
         }
         applyAllFilters();
       }
@@ -1054,13 +1111,9 @@ function initCharts() {
           hideDrilldown();
         } else {
           crossFilter.designerId = designerId;
-          // Also update donut drilldown to match
-          const base = getDropdownFilteredTickets();
-          const sub  = designerId === '__unassigned__'
-            ? base.filter(t => !t.assignedTo)
-            : base.filter(t => t.assignedTo?.id === designerId);
+          const base  = getDropdownFilteredTickets();
           const entry = designerData[designerId];
-          if (entry) showDonutDrilldown(entry.name, barColors[idx], sub);
+          if (entry) showDonutDrilldown(entry.name, barColors[idx], ticketsForDesigner(base, designerId));
         }
         applyAllFilters();
       }
@@ -1076,8 +1129,16 @@ function initCharts() {
     data: {
       labels: statusKeys.map(s => STATUS_LABELS[s]),
       datasets: [{
-        label:           'Tickets',
-        data:            statusKeys.map(s => tickets.filter(t => t.status === s).length),
+        label:           'Sub-tasks / Tickets',
+        data:            statusKeys.map(s => {
+          let n = 0;
+          for (const t of tickets) {
+            const ch = t.childIssues || [];
+            if (ch.length > 0) n += ch.filter(c => c.status === s).length;
+            else if (t.status === s) n++;
+          }
+          return n;
+        }),
         backgroundColor: statusBgColors,
         borderColor:     statusBorders,
         borderWidth:     2,
@@ -1089,7 +1150,7 @@ function initCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend:  { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ticket${ctx.raw !== 1 ? 's' : ''}` } }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} sub-task${ctx.raw !== 1 ? 's' : ''}` } }
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -1136,7 +1197,7 @@ function renderLeadTickets(list) {
   const listEl = document.getElementById('ticketList');
   if (!listEl) return;
   const isStudio = (document.getElementById('filterProject')?.value === 'studio');
-  if (!list.length) { listEl.innerHTML = '<div class="empty-list">No tickets match the selected filters.</div>'; return; }
+  if (!list.length) { listEl.innerHTML = contextEmptyState('creative_lead'); return; }
   listEl.innerHTML = (isStudio
     ? `<div class="studio-view-header">🎬 Studio view — showing only sub-tasks that need Studio team</div>`
     : '') + list.map(t => leadBubble(t, isStudio)).join('');
@@ -1411,49 +1472,36 @@ window.autoAssignTicketModal = async function (ticketId) {
   if (t?.childIssues?.length) {
     const loads      = buildDesignerLoads();
     const spOf       = c => parseInt(document.getElementById(`sp-child-${c.id}`)?.value, 10) || (c.storyPoints || 0);
-    const studioKids = t.childIssues.filter(c => c.is_need_studio  && spOf(c) > 0);
-    const otherKids  = t.childIssues.filter(c => !c.is_need_studio && spOf(c) > 0);
+    const studioKids = t.childIssues.filter(c => c.is_need_studio                              && spOf(c) > 0);
+    const cwKids     = t.childIssues.filter(c => c.is_need_copywriting && !c.is_need_studio    && spOf(c) > 0);
+    const bauKids    = t.childIssues.filter(c => !c.is_need_studio     && !c.is_need_copywriting && spOf(c) > 0);
     let lastData = null;
 
-    // Studio: ONE designer for all studio sub-tasks
-    if (studioKids.length) {
-      const totalSP = studioKids.reduce((s, c) => s + spOf(c), 0);
-      const studioDesigners = getEligibleDesignersForTask(t.project, true);
-      if (studioDesigners.length) {
-        const sub = {};
-        for (const m of studioDesigners) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
-        const designer = pickBestDesigner(sub, totalSP);
-        if (designer) {
-          for (const c of studioKids) {
-            try {
-              const { data } = await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, {
-                assignedTo: { id: designer.id, name: designer.name, email: designer.email }
-              });
-              lastData = data;
-            } catch {}
-          }
-          if (loads[designer.id]) loads[designer.id].usedSP += totalSP;
-        }
-      }
-    }
-
-    // Non-studio: assign individually
-    for (const c of otherKids) {
-      const sp = spOf(c);
-      const designers = getEligibleDesignersForTask(t.project, false);
-      if (!designers.length) continue;
+    // Shared helper: assign all kids in a scope group to ONE best-fit designer
+    const assignGroupModal = async (kids, isStudio, isCW) => {
+      if (!kids.length) return;
+      const totalSP  = kids.reduce((s, c) => s + spOf(c), 0);
+      const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
+      if (!eligible.length) return;
       const sub = {};
-      for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
-      const designer = pickBestDesigner(sub, sp);
-      if (!designer) continue;
-      try {
-        const { data } = await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, {
-          assignedTo: { id: designer.id, name: designer.name, email: designer.email }
-        });
-        lastData = data;
-        if (loads[designer.id]) loads[designer.id].usedSP += sp;
-      } catch {}
-    }
+      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+      const designer = pickBestDesigner(sub, totalSP);
+      if (!designer) return;
+      for (const c of kids) {
+        try {
+          const { data } = await window.api.put(`/api/requests/${ticketId}/children/${c.id}`, {
+            assignedTo: { id: designer.id, name: designer.name, email: designer.email }
+          });
+          lastData = data;
+        } catch {}
+      }
+      if (!loads[designer.id]) loads[designer.id] = { member: designer, usedSP: 0, maxSP: designer.maxStoryPoints || 10 };
+      loads[designer.id].usedSP += totalSP;
+    };
+
+    await assignGroupModal(studioKids, true,  false); // All studio  → 1 designer
+    await assignGroupModal(cwKids,     false, true);  // All CW      → 1 designer
+    await assignGroupModal(bauKids,    false, false); // All design  → 1 designer
 
     if (lastData) { document.getElementById('modalContent').innerHTML = buildModalContent(lastData); setupCommentImagePaste(); }
     await loadTickets();
@@ -1494,6 +1542,8 @@ window.autoAssignAll = async function () {
 
   const btn = document.getElementById('autoAssignAllBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⚡ Assigning…'; }
+
+  const restoreBtn = () => { const b = document.getElementById('autoAssignAllBtn'); if (b) { b.disabled = false; b.textContent = '⚡ Auto-assign'; } };
 
   const sorted = [...withSP].sort((a, b) => {
     const pa = PRIORITY_ORDER[a.fields?.priority] ?? 4;
@@ -1536,22 +1586,8 @@ window.autoAssignAll = async function () {
       await assignGroup(cwKids,     false, true);  // CW: one designer per ticket
 
       // BAU: assign individually by project scope
-      for (const c of bauKids) {
-        const designers = getEligibleDesignersForTask(t.project, false, false);
-        if (!designers.length) continue;
-        const sub = {};
-        for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
-        const designer = pickBestDesigner(sub, c.storyPoints);
-        if (!designer) continue;
-        try {
-          await window.api.put(`/api/requests/${t.id}/children/${c.id}`, {
-            assignedTo: { id: designer.id, name: designer.name, email: designer.email }
-          });
-          if (!loads[designer.id]) loads[designer.id] = { member: designer, usedSP: 0, maxSP: designer.maxStoryPoints || 10 };
-          loads[designer.id].usedSP += c.storyPoints;
-          assigned++;
-        } catch {}
-      }
+      // BAU design: ONE designer for ALL design sub-tasks in this ticket
+      await assignGroup(bauKids, false, false);
     } else {
       // No children: assign parent ticket directly
       const designer = pickBestDesigner(loads, t.storyPoints);
@@ -1560,23 +1596,28 @@ window.autoAssignAll = async function () {
         await window.api.put(`/api/requests/${t.id}`, {
           assignedTo: { id: designer.id, name: designer.name, email: designer.email }
         });
-        loads[designer.id].usedSP += t.storyPoints;
+        if (!loads[designer.id]) loads[designer.id] = { member: designer, usedSP: 0, maxSP: designer.maxStoryPoints || 10 };
+        loads[designer.id].usedSP += t.storyPoints || 0;
         assigned++;
       } catch {}
     }
   }
 
-  await loadTickets();
-
-  const area   = document.getElementById('contentArea');
-  const notice = document.createElement('div');
-  notice.className = 'alert alert-success';
-  notice.style.marginBottom = '16px';
-  let msg = `✓ Auto-assigned ${assigned} sub-task${assigned !== 1 ? 's' : ''} using scope-aware load balancing (priority-ordered).`;
-  if (skippedSP) msg += `  ${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped — no story points.`;
-  notice.textContent = msg;
-  area.insertBefore(notice, area.firstChild);
-  setTimeout(() => notice.remove(), 6000);
+  try {
+    await loadTickets();
+    const area   = document.getElementById('contentArea');
+    const notice = document.createElement('div');
+    notice.className = 'alert alert-success';
+    notice.style.marginBottom = '16px';
+    let msg = `✓ Auto-assigned ${assigned} sub-task${assigned !== 1 ? 's' : ''} using scope-aware load balancing (priority-ordered).`;
+    if (skippedSP) msg += `  ${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped — no story points.`;
+    notice.textContent = msg;
+    area.insertBefore(notice, area.firstChild);
+    setTimeout(() => notice.remove(), 6000);
+  } catch (err) {
+    restoreBtn();
+    alert(err.message);
+  }
 };
 
 window.updateDesignerCapacity = async function (designerId, input) {
@@ -1799,78 +1840,87 @@ function buildModalContent(t) {
     ? `My Sub-tasks (${displayChildren.filter(c=>c.status==='approved').length}/${displayChildren.length} approved)`
     : `Sub-tasks (${allChildren.filter(c=>c.status==='approved').length}/${allChildren.length} approved)`;
 
+  const approvedChildCount = (role === 'creative_designer'
+    ? allChildren.filter(c => c.assignedTo?.id === currentUser.id)
+    : allChildren).filter(c => c.status === 'approved').length;
+
   const childSection = displayChildren.length ? `
     <div class="modal-section">
-      <div class="modal-section-title">${childSectionTitle}</div>
-      <div class="modal-children">
-        ${displayChildren.map(c => `
-          <div class="modal-child-item">
-            <div class="modal-child-main">
-              ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
-              <span class="child-title">${escHtml(c.child_title||'—')}</span>
-              ${c.child_due ? `<span class="child-due">Due: ${fmtDate(c.child_due)}</span>` : ''}
-              <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
-              ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
-              ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
-            </div>
-            ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
-            ${(role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
-            <div class="child-url-row">
-              <div class="child-url-item">
-                <span class="child-url-label">📝 Draft:</span>
-                <input type="url" class="child-url-input" id="draft-${c.id}"
-                  value="${escHtml(c.draft_url || '')}" placeholder="https://…">
-                <button class="btn btn-sm btn-outline" onclick="saveChildDraftUrl('${t.id}','${c.id}')">Save</button>
-                ${c.draft_url ? `<a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+      <details class="modal-subtask-details" open>
+        <summary class="modal-subtask-summary">
+          <span class="summary-arrow">▶</span>
+          ${childSectionTitle}&nbsp;&nbsp;&nbsp;${approvedChildCount}/${displayChildren.length} approved
+        </summary>
+        <div class="modal-children">
+          ${displayChildren.map(c => `
+            <div class="modal-child-item">
+              <div class="modal-child-main">
+                ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
+                <span class="child-title">${escHtml(c.child_title||'—')}</span>
+                ${c.child_due ? `<span class="child-due">Due: ${fmtDate(c.child_due)}</span>` : ''}
+                <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
+                ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
+                ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
               </div>
-              <div class="child-url-item">
-                <span class="child-url-label">✅ Final:</span>
-                <input type="url" class="child-url-input" id="final-${c.id}"
-                  value="${escHtml(c.final_url || '')}" placeholder="https://…">
-                <button class="btn btn-sm btn-outline" onclick="saveChildFinalUrl('${t.id}','${c.id}')">Save</button>
-                ${c.final_url ? `<a href="${escHtml(c.final_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+              ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
+              ${!c.is_need_copywriting && (role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
+              <div class="child-url-row">
+                <div class="child-url-item">
+                  <span class="child-url-label">📝 Draft:</span>
+                  <input type="url" class="child-url-input" id="draft-${c.id}"
+                    value="${escHtml(c.draft_url || '')}" placeholder="https://…">
+                  <button class="btn btn-sm btn-outline" onclick="saveChildDraftUrl('${t.id}','${c.id}')">Save</button>
+                  ${c.draft_url ? `<a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+                </div>
+                <div class="child-url-item">
+                  <span class="child-url-label">✅ Final:</span>
+                  <input type="url" class="child-url-input" id="final-${c.id}"
+                    value="${escHtml(c.final_url || '')}" placeholder="https://…">
+                  <button class="btn btn-sm btn-outline" onclick="saveChildFinalUrl('${t.id}','${c.id}')">Save</button>
+                  ${c.final_url ? `<a href="${escHtml(c.final_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
+                </div>
+              </div>` : `
+              ${!c.is_need_copywriting && (c.draft_url || c.final_url) ? `<div class="child-url-row">
+                ${c.draft_url ? `<div class="child-url-item"><span class="child-url-label">📝 Draft:</span><a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">${escHtml(c.draft_url)}</a></div>` : ''}
+                ${c.final_url ? `<div class="child-url-item"><span class="child-url-label">✅ Final:</span><a href="${escHtml(c.final_url)}" target="_blank" class="url-link">${escHtml(c.final_url)}</a></div>` : ''}
+              </div>` : ''}`}
+              <div class="child-assign-row">
+                <span class="child-sp-label">Assign to:</span>
+                ${(role === 'creative_lead' || role === 'admin') ? (() => {
+                  const eligible = teamMembers.filter(m => {
+                    const ps = m.projects || [];
+                    if (c.is_need_studio)       return ps.includes('studio');
+                    if (c.is_need_copywriting)  return ps.includes('copywriting');
+                    return ps.includes(t.project);
+                  });
+                  return eligible.length
+                    ? `<select class="child-assignee-select" onchange="assignChildImmediate('${t.id}','${c.id}',this)">
+                         <option value="">— Unassigned —</option>
+                         ${eligible.map(m => `<option value="${m.id}" ${c.assignedTo?.id === m.id ? 'selected' : ''}>${escHtml(m.name)}</option>`).join('')}
+                       </select>
+                       ${c.is_need_studio      ? '<span class="studio-badge" style="font-size:10px">🎬 Studio</span>' : ''}
+                       ${c.is_need_copywriting ? '<span class="cw-badge"     style="font-size:10px">✍️ CW</span>'     : ''}`
+                    : `<span style="font-size:11px;color:var(--text-muted)">No eligible designers for this scope</span>`;
+                })() : `<span class="assignee-tag" style="font-size:11px">${c.assignedTo ? escHtml(c.assignedTo.name) : '—'}</span>`}
               </div>
-            </div>` : `
-            ${c.draft_url || c.final_url ? `<div class="child-url-row">
-              ${c.draft_url ? `<div class="child-url-item"><span class="child-url-label">📝 Draft:</span><a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">${escHtml(c.draft_url)}</a></div>` : ''}
-              ${c.final_url ? `<div class="child-url-item"><span class="child-url-label">✅ Final:</span><a href="${escHtml(c.final_url)}" target="_blank" class="url-link">${escHtml(c.final_url)}</a></div>` : ''}
-            </div>` : ''}`}
-            <div class="child-assign-row">
-              <span class="child-sp-label">Assign to:</span>
-              ${(role === 'creative_lead' || role === 'admin') ? (() => {
-                const eligible = teamMembers.filter(m => {
-                  const ps = m.projects || [];
-                  if (c.is_need_studio)       return ps.includes('studio');
-                  if (c.is_need_copywriting)  return ps.includes('copywriting');
-                  return ps.includes(t.project);
-                });
-                return eligible.length
-                  ? `<select class="child-assignee-select" onchange="assignChildImmediate('${t.id}','${c.id}',this)">
-                       <option value="">— Unassigned —</option>
-                       ${eligible.map(m => `<option value="${m.id}" ${c.assignedTo?.id === m.id ? 'selected' : ''}>${escHtml(m.name)}</option>`).join('')}
-                     </select>
-                     ${c.is_need_studio      ? '<span class="studio-badge" style="font-size:10px">🎬 Studio</span>' : ''}
-                     ${c.is_need_copywriting ? '<span class="cw-badge"     style="font-size:10px">✍️ CW</span>'     : ''}`
-                  : `<span style="font-size:11px;color:var(--text-muted)">No eligible designers for this scope</span>`;
-              })() : `<span class="assignee-tag" style="font-size:11px">${c.assignedTo ? escHtml(c.assignedTo.name) : '—'}</span>`}
-            </div>
-            <div class="child-sp-row">
-              <span class="child-sp-label">Story Points:</span>
-              ${canEditSP
-                ? `<input type="number" class="child-sp-input" id="sp-child-${c.id}" data-child-id="${c.id}"
-                     value="${c.storyPoints != null ? c.storyPoints : ''}" min="0" max="999" placeholder="—">`
-                : `<span class="sp-badge" style="font-size:11px">${c.storyPoints != null ? 'SP: '+c.storyPoints : '—'}</span>`}
-            </div>
-            ${role !== 'requester' ? childStatusSelectModal(t.id, c) : ''}
-            ${buildChildDiscussion(t.id, c)}
-          </div>`).join('')}
-      </div>
-      ${canEditSP ? `
-        <div style="margin-top:12px;display:flex;justify-content:flex-end">
-          <button class="btn btn-primary btn-sm" onclick="saveAllChildSP('${t.id}','${childIds}')">
-            Save Story Points
-          </button>
-        </div>` : ''}
+              <div class="child-sp-row">
+                <span class="child-sp-label">Story Points:</span>
+                ${canEditSP
+                  ? `<input type="number" class="child-sp-input" id="sp-child-${c.id}" data-child-id="${c.id}"
+                       value="${c.storyPoints != null ? c.storyPoints : ''}" min="0" max="999" placeholder="—">`
+                  : `<span class="sp-badge" style="font-size:11px">${c.storyPoints != null ? 'SP: '+c.storyPoints : '—'}</span>`}
+              </div>
+              ${role !== 'requester' ? childStatusSelectModal(t.id, c) : ''}
+              ${buildChildDiscussion(t.id, c)}
+            </div>`).join('')}
+        </div>
+        ${canEditSP ? `
+          <div style="padding:0 14px 14px;display:flex;justify-content:flex-end">
+            <button class="btn btn-primary btn-sm" onclick="saveAllChildSP('${t.id}','${childIds}')">
+              Save Story Points
+            </button>
+          </div>` : ''}
+      </details>
     </div>` : '';
 
   const commentsHtml = (t.comments||[]).length
@@ -1893,7 +1943,7 @@ function buildModalContent(t) {
         <span class="status-badge status-${status}">${STATUS_LABELS[status]||status}</span>
       </div>
       ${t.ticketId ? `<div class="modal-ticket-id">${escHtml(t.ticketId)}</div>` : ''}
-      <h2 class="modal-title">${escHtml(title)}</h2>
+      <h2 class="modal-title" id="modalTitle">${escHtml(title)}</h2>
       <div class="ticket-meta" style="margin-top:8px">
         ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
         ${t.fields?.deadline ? `<span class="meta-tag">Deadline: ${fmtDate(t.fields.deadline)}</span>` : ''}
@@ -1904,7 +1954,7 @@ function buildModalContent(t) {
     </div>
     ${t.fields?.description ? `<div class="modal-section"><div class="modal-section-title">Description</div><p class="modal-text">${escHtml(t.fields.description)}</p></div>` : ''}
     ${t.fields?.notes ? `<div class="modal-section"><div class="modal-section-title">Notes</div><p class="modal-text">${escHtml(t.fields.notes)}</p></div>` : ''}
-    ${t.ai_brief_note ? `<div class="modal-section ai-brief-note-section"><div class="modal-section-title">✨ AI Brief Notes</div><div class="ai-brief-note-body">${escHtml(t.ai_brief_note)}</div></div>` : ''}
+    ${t.ai_brief_note ? `<div class="modal-section ai-brief-note-section"><div class="modal-section-title"><span aria-hidden="true">🤖</span> AI Brief Notes <span class="ai-generated-tag">AI-Generated</span></div><div class="ai-brief-note-body">${escHtml(t.ai_brief_note)}</div></div>` : ''}
     ${statusSection}${assignSection}${spSection}${childSection}
     ${buildStatusHistory(t)}
     <div class="modal-section">
@@ -1981,10 +2031,11 @@ window.saveChildDraftUrl = async function (ticketId, childId) {
   } catch (err) { alert(err.message); }
 };
 
-// Final URL → saves + auto-moves to approved
+// Final URL → saves + auto-moves to approved (only if URL is valid)
 window.saveChildFinalUrl = async function (ticketId, childId) {
   const url = document.getElementById(`final-${childId}`)?.value?.trim();
   if (!url) return;
+  try { new URL(url); } catch { alert('Please enter a valid URL (e.g. https://…)'); return; }
   const updates = { final_url: url, status: 'approved' };
   try {
     const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, updates);
@@ -2082,29 +2133,80 @@ window.clearCommentImage = function () {
   if (preview) preview.remove();
 };
 
+// ── Toast Notifications ────────────────────────────────────────────────────
+
+function showToast(message) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id        = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  // Trigger enter animation on next frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('toast-visible'));
+  });
+
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    toast.classList.add('toast-hiding');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 3000);
+}
+
 // ── Actions ────────────────────────────────────────────────────────────────
 
+const _statusInFlight = new Set();
+
 window.changeStatus = async function (id, status) {
-  try { await window.api.put(`/api/requests/${id}`, { status }); await loadTickets(); }
+  const key = `${id}:${status}`;
+  if (_statusInFlight.has(key)) return;
+  _statusInFlight.add(key);
+  try {
+    await window.api.put(`/api/requests/${id}`, { status });
+    showToast(`Status updated to ${STATUS_LABELS[status] || status}`);
+    await loadTickets();
+  }
   catch (err) { alert(err.message); }
+  finally { _statusInFlight.delete(key); }
 };
 
 window.changeStatusModal = async function (id, status) {
+  const key = `modal:${id}:${status}`;
+  if (_statusInFlight.has(key)) return;
+  _statusInFlight.add(key);
   try {
     const { data } = await window.api.put(`/api/requests/${id}`, { status });
     document.getElementById('modalContent').innerHTML = buildModalContent(data);
     setupCommentImagePaste();
+    showToast(`Status updated to ${STATUS_LABELS[status] || status}`);
     await loadTickets();
   }
   catch (err) { alert(err.message); }
+  finally { _statusInFlight.delete(key); }
 };
 
 window.changeChildStatus = async function (ticketId, childId, status) {
+  const key = `child:${ticketId}:${childId}:${status}`;
+  if (_statusInFlight.has(key)) return;
+  _statusInFlight.add(key);
   try { await window.api.put(`/api/requests/${ticketId}/children/${childId}`, { status }); await loadTickets(); }
   catch (err) { alert(err.message); }
+  finally { _statusInFlight.delete(key); }
 };
 
 window.changeChildStatusModal = async function (ticketId, childId, status) {
+  const key = `childmodal:${ticketId}:${childId}:${status}`;
+  if (_statusInFlight.has(key)) return;
+  _statusInFlight.add(key);
   try {
     const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, { status });
     document.getElementById('modalContent').innerHTML = buildModalContent(data);
@@ -2112,6 +2214,7 @@ window.changeChildStatusModal = async function (ticketId, childId, status) {
     await loadTickets();
   }
   catch (err) { alert(err.message); }
+  finally { _statusInFlight.delete(key); }
 };
 
 window.assignFromSelect = async function (ticketId, sel) {
@@ -2157,10 +2260,19 @@ window.postComment = async function (ticketId) {
     document.getElementById('modalContent').innerHTML = buildModalContent(data);
     setupCommentImagePaste();
   }
-  catch (err) { alert(err.message); }
+  catch (err) {
+    alert(err.message);
+    // Clear stale pending image so a retry doesn't re-attach an image the server never received
+    pendingCommentImage = null;
+    const preview = document.getElementById('commentImgPreview');
+    if (preview) preview.remove();
+  }
 };
 
 window.openChildDiscussion = function (ticketId, childId) {
+  // Clear any stale image from a previously open discussion
+  pendingChildDiscImg = null;
+
   childDiscTicketId = ticketId;
   childDiscChildId  = childId;
   const c = (currentModalTicket?.childIssues || []).find(x => x.id === childId);
@@ -2189,6 +2301,7 @@ window.closeChildDiscussion = function () {
 };
 
 window.postChildDiscComment = async function () {
+  if (!childDiscTicketId || !childDiscChildId) return;
   const input = document.getElementById('childDiscInput');
   const text  = input?.value?.trim();
   if (!text && !pendingChildDiscImg) return;
@@ -2311,7 +2424,27 @@ function updateDesignerStatCards(filtered) {
 }
 
 function emptyState(title, msg, link, linkLabel) {
-  return `<div class="empty-state-full"><div class="empty-icon">📭</div><h3>${title}</h3><p>${msg}</p>${link ? `<a href="${link}" class="btn btn-primary" style="margin-top:16px">${linkLabel}</a>` : ''}</div>`;
+  return `<div class="empty-state-full" role="status">
+    <div class="empty-icon" aria-hidden="true">📭</div>
+    <h3>${title}</h3>
+    <p>${msg}</p>
+    ${link ? `<a href="${link}" class="btn btn-primary" style="margin-top:16px">${linkLabel}</a>` : ''}
+  </div>`;
+}
+
+function contextEmptyState(role, view) {
+  if (role === 'creative_designer') {
+    return emptyState('No tickets assigned yet', 'Your creative lead will assign tickets here. Check back soon.');
+  }
+  if (role === 'requester') {
+    if (view === 'mine') {
+      return emptyState('No requests yet', 'Submit your first creative request to get started.', '/form', 'New Request →');
+    }
+    // queue
+    return emptyState('No active tickets in your project queue', 'Tickets submitted by your team will appear here.');
+  }
+  // creative_lead / admin
+  return emptyState('All caught up!', 'No active tickets match your current filters.');
 }
 
 function escHtml(str) {
@@ -2334,6 +2467,25 @@ function cap(str) { return str ? str[0].toUpperCase() + str.slice(1) : str; }
 
 // ── Notifications ──────────────────────────────────────────────────────────
 
+function notifBellHtml() {
+  return `<div class="notif-wrap" id="notifWrap">
+    <button class="notif-btn" title="Stuck ticket reminders" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" id="notifToggleBtn" onclick="toggleNotifPanel()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+      <span class="notif-badge" id="notifBadge" style="display:none" aria-label="unread notifications">0</span>
+    </button>
+    <div class="notif-panel" id="notifPanel" style="display:none" role="region" aria-label="Stuck ticket notifications">
+      <div class="notif-panel-head">
+        <span>Stuck Tickets</span>
+        <button class="notif-refresh" onclick="event.stopPropagation();loadNotifications()" title="Refresh" aria-label="Refresh notifications">↻</button>
+      </div>
+      <div class="notif-list" id="notifList"><div class="notif-empty">Loading…</div></div>
+    </div>
+  </div>`;
+}
+
 window.loadNotifications = async function () {
   try {
     const { data } = await window.api.get('/api/notifications/stuck');
@@ -2354,8 +2506,13 @@ function updateNotifUI(items) {
   }
 
   list.innerHTML = items.length
-    ? items.map(n => `
-        <div class="notif-item" onclick="closeNotifPanel();openTicketModal('${n.id}')">
+    ? items.map(n => {
+        const urgencyClass = n.daysStuck >= 4 ? 'notif-item-danger' : 'notif-item-warning';
+        return `
+        <div class="notif-item ${urgencyClass}" role="button" tabindex="0"
+             onclick="closeNotifPanel();openTicketModal('${n.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){closeNotifPanel();openTicketModal('${n.id}')}"
+             aria-label="View stuck ticket: ${escHtml(n.title)}, stuck for ${n.daysStuck} day${n.daysStuck !== 1 ? 's' : ''}">
           <div class="notif-item-top">
             ${n.ticketId ? `<span class="notif-ticket-id">${escHtml(n.ticketId)}</span>` : ''}
             <span class="notif-title">${escHtml(n.title)}</span>
@@ -2364,24 +2521,26 @@ function updateNotifUI(items) {
             <span class="status-badge status-${n.status} status-sm">${STATUS_LABELS[n.status]||n.status}</span>
             <span class="notif-days">${n.daysStuck} day${n.daysStuck !== 1 ? 's' : ''} stuck</span>
           </div>
-        </div>`).join('')
+        </div>`;
+      }).join('')
     : '<div class="notif-empty">No stuck tickets — all good!</div>';
 }
 
 window.toggleNotifPanel = function () {
   const panel = document.getElementById('notifPanel');
+  const btn   = document.getElementById('notifToggleBtn');
   if (!panel) return;
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    loadNotifications();
-  } else {
-    panel.style.display = 'none';
-  }
+  const isOpen = panel.style.display === 'none';
+  panel.style.display = isOpen ? 'block' : 'none';
+  if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  if (isOpen) loadNotifications();
 };
 
 window.closeNotifPanel = function () {
   const panel = document.getElementById('notifPanel');
+  const btn   = document.getElementById('notifToggleBtn');
   if (panel) panel.style.display = 'none';
+  if (btn) btn.setAttribute('aria-expanded', 'false');
 };
 
 init();

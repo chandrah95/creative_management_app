@@ -45,7 +45,7 @@
 
 .field-label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 6px;
@@ -141,4 +141,30 @@
   justify-content: flex-end;
   gap: 12px;
   padding-top: 4px;
+}
+
+/* ===== FORM RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .fields-grid { grid-template-columns: 1fr; }
+  .field-group.full,
+  .field-group.half,
+  .field-group.third { grid-column: span 1; }
+
+  .form-section { padding: 16px; }
+  .form-actions { flex-direction: column-reverse; }
+  .form-actions .btn { width: 100%; justify-content: center; }
+
+  .child-issue-card { padding: 14px; }
+}
+
+/* ===== FIELD ERROR ANIMATION ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+.field-input.error,
+.field-select.error,
+.field-textarea.error {
+  animation: shake .35s ease;
 }

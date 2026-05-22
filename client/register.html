@@ -45,7 +45,7 @@
 </head>
 <body class="auth-page">
 
-  <div class="auth-card">
+  <div class="auth-card" role="main">
     <div class="auth-logo">
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#6366f1"/><path d="M13 20h14M20 13v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
       <span>Creative Hub</span>
@@ -68,10 +68,12 @@
         <label for="password">Password</label>
         <div class="input-with-toggle">
           <input type="password" id="password" name="password" placeholder="Min. 8 characters" autocomplete="new-password" required />
-          <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePassword()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <button type="button" class="toggle-password" aria-label="Show password" aria-pressed="false" id="togglePwdBtn" onclick="togglePassword()">
+            <svg id="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
         </div>
+        <span class="field-hint">Use at least 8 characters with a mix of letters and numbers.</span>
       </div>
 
       <div class="form-group">
@@ -87,8 +89,15 @@
 
       <!-- Shown when requester is selected -->
       <div class="form-group" id="requesterScopeGroup" style="display:none">
-        <label>Your Project Scope <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-        <span class="field-hint">Select the projects you submit requests for. Leave empty to access all projects.</span>
+        <label>Project Scope <span class="required">*</span></label>
+        <span class="field-hint">Choose the projects you work with. Only tickets from these projects will be visible to you in the queue. You can select multiple.</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:4px;flex-wrap:wrap;gap:6px">
+          <span id="scopeCounter" style="font-size:12px;color:var(--text-muted);font-weight:500"></span>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-sm btn-ghost" onclick="selectAllRequesterScope()">Select all</button>
+            <button type="button" class="btn btn-sm btn-ghost" onclick="clearAllRequesterScope()">Clear all</button>
+          </div>
+        </div>
         <div id="requesterScopeOptions" class="scope-options"></div>
       </div>
 
@@ -152,8 +161,16 @@
     }
 
     function togglePassword() {
-      const input = document.getElementById('password');
-      input.type = input.type === 'password' ? 'text' : 'password';
+      const input    = document.getElementById('password');
+      const btn      = document.getElementById('togglePwdBtn');
+      const eyeOpen  = document.getElementById('eye-open');
+      const eyeClosed = document.getElementById('eye-closed');
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+      eyeOpen.style.display  = isHidden ? 'none' : '';
+      eyeClosed.style.display = isHidden ? '' : 'none';
     }
 
     // All regular project IDs for requester scope selection
@@ -168,16 +185,18 @@
 
     function renderRequesterScopeOptions() {
       const el = document.getElementById('requesterScopeOptions');
+      // All projects pre-selected by default — user deselects what they don't need
       el.innerHTML = REQUESTER_PROJECTS.map(p => `
-        <div class="scope-card" onclick="toggleScopeCard(this)" data-scope="${p.id}">
+        <div class="scope-card selected" onclick="toggleScopeCard(this)" data-scope="${p.id}">
           <div class="scope-check">✓</div>
           <span class="scope-dot" style="background:${p.color}"></span>
-          <input type="hidden" name="requester_scope" value="${p.id}" disabled>
+          <input type="hidden" name="requester_scope" value="${p.id}">
           <div>
             <div class="scope-card-name">${p.name} <span style="font-size:10px;color:var(--text-muted)">${p.code}</span></div>
             <div class="scope-card-desc">${p.group}</div>
           </div>
         </div>`).join('');
+      updateScopeCounter();
     }
 
     async function onRoleChange(role) {
@@ -239,13 +258,44 @@
       scopeGroup.style.display = 'block';
     }
 
+    function updateScopeCounter() {
+      const counter = document.getElementById('scopeCounter');
+      if (!counter) return;
+      const total    = document.querySelectorAll('#requesterScopeOptions .scope-card').length;
+      const selected = document.querySelectorAll('#requesterScopeOptions .scope-card.selected').length;
+      counter.textContent = `${selected} of ${total} selected`;
+    }
+
+    function selectAllRequesterScope() {
+      document.querySelectorAll('#requesterScopeOptions .scope-card').forEach(card => {
+        card.classList.add('selected');
+        const input = card.querySelector('input[type="hidden"]');
+        if (input) input.disabled = false;
+      });
+      updateScopeCounter();
+    }
+
+    function clearAllRequesterScope() {
+      document.querySelectorAll('#requesterScopeOptions .scope-card').forEach(card => {
+        card.classList.remove('selected');
+        const input = card.querySelector('input[type="hidden"]');
+        if (input) input.disabled = true;
+      });
+      updateScopeCounter();
+    }
+
     function toggleScopeCard(card) {
       const isSelected = card.classList.toggle('selected');
-      card.querySelector('input[name="scope"]').disabled = !isSelected;
+      // Cards may use name="scope" (designer) or name="requester_scope" (requester)
+      const input = card.querySelector('input[type="hidden"]');
+      if (input) input.disabled = !isSelected;
+      // Update counter if this is a requester scope card
+      if (card.closest('#requesterScopeOptions')) updateScopeCounter();
     }
 
     function getSelectedScopes() {
-      return [...document.querySelectorAll('.scope-card.selected')]
+      // Scope only within the designer scope picker, not requester scope cards
+      return [...document.querySelectorAll('#scopeOptions .scope-card.selected')]
         .map(card => card.dataset.scope);
     }
 
@@ -254,6 +304,11 @@
       document.getElementById('registerBtnLoader').style.display = 'none';
       document.getElementById('registerBtn').disabled = false;
     }
+
+    // Initialize scope section for the default role on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      onRoleChange(document.getElementById('role').value);
+    });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -268,6 +323,18 @@
       document.getElementById('registerBtnText').style.display = 'none';
       document.getElementById('registerBtnLoader').style.display = 'inline-block';
       document.getElementById('registerBtn').disabled = true;
+
+      // Validate requester scope
+      if (role === 'requester') {
+        const rp = [...document.querySelectorAll('#requesterScopeOptions .scope-card.selected')]
+          .map(card => card.dataset.scope);
+        if (!rp.length) {
+          errBox.textContent = 'Please select at least one project scope.';
+          errBox.style.display = 'block';
+          resetBtn();
+          return;
+        }
+      }
 
       // Validate designer-specific fields
       if (role === 'creative_designer') {

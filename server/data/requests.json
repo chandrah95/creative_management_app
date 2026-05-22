@@ -1046,7 +1046,11 @@
     "id": "sm020002-0000-4000-8000-200000000002",
     "ticketId": "SMXC-02",
     "status": "requested",
-    "assignedTo": null,
+    "assignedTo": {
+      "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+      "name": "Designer Two",
+      "email": "designer2@company.com"
+    },
     "comments": [],
     "statusHistory": [
       {
@@ -1097,8 +1101,12 @@
         "child_due": "2026-05-24",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 3,
+        "assignedTo": {
+          "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+          "name": "Designer Two",
+          "email": "designer2@company.com"
+        }
       },
       {
         "id": "sm02c002-0000-4000-8000-200000000022",
@@ -1116,8 +1124,12 @@
         "child_due": "2026-05-25",
         "is_need_studio": true,
         "child_notes": "Studio needed for ketupat and lantern product arrangement photography",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 3,
+        "assignedTo": {
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
+        }
       },
       {
         "id": "sm02c003-0000-4000-8000-200000000023",
@@ -1135,11 +1147,16 @@
         "child_due": "2026-05-26",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+          "name": "Designer Two",
+          "email": "designer2@company.com"
+        }
       }
     ],
-    "storyPoints": null
+    "storyPoints": 8,
+    "updatedAt": "2026-05-22T11:25:54.775Z"
   },
   {
     "id": "sm030003-0000-4000-8000-200000000003",
@@ -1244,7 +1261,11 @@
     "id": "sm040004-0000-4000-8000-200000000004",
     "ticketId": "SMXC-04",
     "status": "requested",
-    "assignedTo": null,
+    "assignedTo": {
+      "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+      "name": "Chandra Hermawan",
+      "email": "chandra.hermawan@astronauts.id"
+    },
     "comments": [],
     "statusHistory": [
       {
@@ -1295,8 +1316,12 @@
         "child_due": "2026-06-01",
         "is_need_studio": true,
         "child_notes": "Studio shoot needed: anniversary prop setup with logo, balloons, and brand colors",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 1,
+        "assignedTo": {
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
+        }
       },
       {
         "id": "sm04c002-0000-4000-8000-200000000042",
@@ -1314,8 +1339,12 @@
         "child_due": "2026-06-02",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 1,
+        "assignedTo": {
+          "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+          "name": "Chandra Hermawan",
+          "email": "chandra.hermawan@astronauts.id"
+        }
       },
       {
         "id": "sm04c003-0000-4000-8000-200000000043",
@@ -1333,11 +1362,16 @@
         "child_due": "2026-06-03",
         "is_need_studio": true,
         "child_notes": "Studio photo of the team holding '5 Years' sign for the closing slide",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 1,
+        "assignedTo": {
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
+        }
       }
     ],
-    "storyPoints": null
+    "storyPoints": 3,
+    "updatedAt": "2026-05-22T11:11:18.780Z"
   },
   {
     "id": "sm050005-0000-4000-8000-200000000005",
@@ -1541,7 +1575,11 @@
     "id": "da010001-0000-4000-8000-300000000001",
     "ticketId": "DAXC-01",
     "status": "requested",
-    "assignedTo": null,
+    "assignedTo": {
+      "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+      "name": "Chandra Hermawan",
+      "email": "chandra.hermawan@astronauts.id"
+    },
     "comments": [],
     "statusHistory": [
       {
@@ -1590,8 +1628,12 @@
         "child_due": "2026-05-25",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+          "name": "Chandra Hermawan",
+          "email": "chandra.hermawan@astronauts.id"
+        }
       },
       {
         "id": "da01c002-0000-4000-8000-300000000012",
@@ -1609,8 +1651,12 @@
         "child_due": "2026-05-26",
         "is_need_studio": true,
         "child_notes": "Studio product shot required: product must be on gold/premium background for Ramadan theme",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "1c62ebb5-dfc0-44c8-b42c-3451dccea912",
+          "name": "Sheren",
+          "email": "sheren@astronauts.id"
+        }
       },
       {
         "id": "da01c003-0000-4000-8000-300000000013",
@@ -1628,11 +1674,16 @@
         "child_due": "2026-05-27",
         "is_need_studio": false,
         "child_notes": "",
-        "storyPoints": null,
-        "assignedTo": null
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "3084407e-8165-4a5e-b95b-cce6fc0e5907",
+          "name": "Chandra Hermawan",
+          "email": "chandra.hermawan@astronauts.id"
+        }
       }
     ],
-    "storyPoints": null
+    "storyPoints": 6,
+    "updatedAt": "2026-05-22T11:26:39.087Z"
   },
   {
     "id": "da020002-0000-4000-8000-300000000002",
@@ -1736,9 +1787,9 @@
     "ticketId": "DAXC-03",
     "status": "requested",
     "assignedTo": {
-      "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
-      "name": "Designer Two",
-      "email": "designer2@company.com"
+      "id": "98220c3a-24a0-49b8-bf25-3ae8df6f1bd2",
+      "name": "Designer One",
+      "email": "designer1@company.com"
     },
     "comments": [],
     "statusHistory": [
@@ -1853,12 +1904,32 @@
       {
         "id": "da03c002-0000-4000-8000-300000000032",
         "ticketId": "DAXC-03-02",
-        "status": "requested",
+        "status": "on_review",
         "statusHistory": [
           {
             "from": null,
             "to": "requested",
             "changedAt": "2026-05-21T11:00:00.000Z"
+          },
+          {
+            "from": "requested",
+            "to": "in_progress",
+            "changedAt": "2026-05-22T10:58:46.614Z",
+            "changedBy": {
+              "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+              "name": "Designer Two",
+              "role": "creative_designer"
+            }
+          },
+          {
+            "from": "in_progress",
+            "to": "on_review",
+            "changedAt": "2026-05-22T10:59:41.497Z",
+            "changedBy": {
+              "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
+              "name": "Designer Two",
+              "role": "creative_designer"
+            }
           }
         ],
         "child_title": "15s Bumper Ad Frame",
@@ -1867,11 +1938,7 @@
         "is_need_studio": false,
         "child_notes": "",
         "storyPoints": 2,
-        "assignedTo": {
-          "id": "4c129e67-ee95-4a14-9994-daae71f678ec",
-          "name": "Designer Two",
-          "email": "designer2@company.com"
-        }
+        "assignedTo": null
       },
       {
         "id": "da03c003-0000-4000-8000-300000000033",
@@ -1898,7 +1965,7 @@
       }
     ],
     "storyPoints": 6,
-    "updatedAt": "2026-05-22T08:36:29.220Z"
+    "updatedAt": "2026-05-22T11:24:06.309Z"
   },
   {
     "id": "da040004-0000-4000-8000-300000000004",

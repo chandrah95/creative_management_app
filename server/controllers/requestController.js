@@ -104,9 +104,20 @@ function get(req, res) {
   res.json({ success: true, data: request });
 }
 
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB base64 limit
+
 function create(req, res) {
   const { project, fields, childIssues } = req.body;
   if (!project || !fields) return res.status(400).json({ success: false, error: 'Project and fields are required' });
+  if (typeof project !== 'string' || project.trim().length === 0) {
+    return res.status(400).json({ success: false, error: 'Invalid project' });
+  }
+  if (typeof fields !== 'object' || Array.isArray(fields)) {
+    return res.status(400).json({ success: false, error: 'Fields must be an object' });
+  }
+  if (!fields.title?.trim()) {
+    return res.status(400).json({ success: false, error: 'Title is required' });
+  }
   if (req.user.role === 'creative_designer' || req.user.role === 'creative_lead') {
     return res.status(403).json({ success: false, error: 'Only requesters can create tickets' });
   }
@@ -131,8 +142,17 @@ function update(req, res) {
   if (!checkAccess(user, request)) return res.status(403).json({ success: false, error: 'Access denied' });
   if (user.role === 'requester') return res.status(403).json({ success: false, error: 'Requesters cannot update tickets' });
 
-  const { status, assignedTo, ...rest } = req.body;
+  const { status, assignedTo } = req.body;
   const updates = {};
+
+  // Whitelist allowed top-level update fields to prevent arbitrary field injection
+  const ALLOWED_UPDATE_FIELDS = ['storyPoints', 'assignedTo', 'status', 'ai_brief_note', 'fields'];
+  const rest = {};
+  for (const key of ALLOWED_UPDATE_FIELDS) {
+    if (key !== 'status' && key !== 'assignedTo' && req.body[key] !== undefined) {
+      rest[key] = req.body[key];
+    }
+  }
 
   if (status !== undefined) {
     if (!VALID_STATUSES.includes(status)) return res.status(400).json({ success: false, error: 'Invalid status' });
@@ -176,6 +196,9 @@ function postComment(req, res) {
 
   const { text, imageData } = req.body;
   if (!text?.trim() && !imageData) return res.status(400).json({ success: false, error: 'Comment text or image is required' });
+  if (imageData && Buffer.byteLength(imageData, 'utf8') > MAX_IMAGE_BYTES) {
+    return res.status(413).json({ success: false, error: 'Image too large. Maximum size is 2 MB.' });
+  }
 
   const updated = addComment(req.params.id, {
     text:      text?.trim() || '',
@@ -193,6 +216,9 @@ function postChildComment(req, res) {
 
   const { text, imageData } = req.body;
   if (!text?.trim() && !imageData) return res.status(400).json({ success: false, error: 'Comment text or image is required' });
+  if (imageData && Buffer.byteLength(imageData, 'utf8') > MAX_IMAGE_BYTES) {
+    return res.status(413).json({ success: false, error: 'Image too large. Maximum size is 2 MB.' });
+  }
 
   const updated = addChildComment(req.params.id, req.params.childId, {
     text:      text?.trim() || '',
@@ -215,8 +241,16 @@ function updateChild(req, res) {
     return res.status(403).json({ success: false, error: 'Only creative leads can assign sub-tasks' });
   }
 
-  const changedBy = req.body.status ? actorOf(user) : null;
-  const updated   = updateChildIssue(req.params.id, req.params.childId, req.body, changedBy);
+  // Whitelist allowed fields — prevents arbitrary field injection
+  const ALLOWED = ['status', 'assignedTo', 'storyPoints', 'draft_url', 'final_url',
+                   'child_title', 'child_due', 'child_notes', 'is_need_studio', 'is_need_copywriting'];
+  const updates = {};
+  for (const key of ALLOWED) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  const changedBy = updates.status ? actorOf(user) : null;
+  const updated   = updateChildIssue(req.params.id, req.params.childId, updates, changedBy);
   if (!updated) return res.status(404).json({ success: false, error: 'Child issue not found' });
   res.json({ success: true, data: updated });
 }

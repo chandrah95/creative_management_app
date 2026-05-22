@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/main.css" />
 </head>
 <body class="app-page">
+<a class="skip-link" href="#contentArea">Skip to main content</a>
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
@@ -36,17 +37,20 @@
   <div class="app-main">
     <header class="top-bar">
       <div class="top-bar-left">
+        <button class="sidebar-toggle" aria-label="Open navigation menu" onclick="toggleMobileSidebar()" aria-expanded="false" id="sidebarToggleBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <h2 class="page-title">AI Settings</h2>
         <span class="role-chip" id="roleChip"></span>
       </div>
     </header>
 
-    <div class="content-area" id="contentArea">
+    <main class="content-area" id="contentArea" tabindex="-1">
 
       <!-- Provider Configuration -->
       <div class="ai-card" id="configCard">
         <div class="ai-card-header">
-          <div class="ai-card-icon">⚙️</div>
+          <div class="ai-card-icon" aria-hidden="true">⚙️</div>
           <div>
             <div class="ai-card-title">AI Provider Configuration</div>
             <div class="ai-card-subtitle">Connect an AI provider to enable brief enhancement, revision notes, and workload summaries.</div>
@@ -81,14 +85,14 @@
             <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
           </div>
 
-          <div id="configStatus" class="ai-status" style="display:none"></div>
+          <div id="configStatus" class="ai-status" style="display:none" aria-live="polite" role="status"></div>
         </div>
       </div>
 
       <!-- Active Initiatives -->
       <div class="ai-card">
         <div class="ai-card-header">
-          <div class="ai-card-icon">✨</div>
+          <div class="ai-card-icon" aria-hidden="true">✨</div>
           <div>
             <div class="ai-card-title">Active AI Initiatives</div>
             <div class="ai-card-subtitle">These run automatically once a provider is configured.</div>
@@ -122,20 +126,46 @@
       <!-- Workload Summary -->
       <div class="ai-card">
         <div class="ai-card-header">
-          <div class="ai-card-icon">📊</div>
+          <div class="ai-card-icon" aria-hidden="true">📊</div>
           <div>
             <div class="ai-card-title">Workload Summary</div>
             <div class="ai-card-subtitle">AI analysis of current team workload across all active tickets.</div>
           </div>
         </div>
         <button class="btn btn-primary" id="summaryBtn" onclick="generateSummary()">Generate Summary</button>
-        <div id="summaryOutput" class="ai-summary-output" style="display:none"></div>
+        <div id="summaryOutput" class="ai-summary-output" style="display:none" aria-live="polite"></div>
       </div>
 
-    </div>
+    </main>
   </div>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()" aria-hidden="true"></div>
 
   <script type="module" src="/js/api.js"></script>
   <script type="module" src="/js/ai-settings.js"></script>
+  <script>
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const btn     = document.getElementById('sidebarToggleBtn');
+      const isOpen  = sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible', isOpen);
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      btn.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+    }
+    function closeMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const btn     = document.getElementById('sidebarToggleBtn');
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.setAttribute('aria-label', 'Open navigation menu');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeMobileSidebar();
+    });
+  </script>
 </body>
 </html>

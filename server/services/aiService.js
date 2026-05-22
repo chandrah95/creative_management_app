@@ -18,6 +18,8 @@ function saveSettings(settings) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
+const AI_TIMEOUT_MS = 15000; // 15 s — prevents indefinite hangs
+
 function httpsPost(hostname, urlPath, headers, body) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(body);
@@ -32,7 +34,11 @@ function httpsPost(hostname, urlPath, headers, body) {
         });
       }
     );
-    req.on('error', reject);
+    const timer = setTimeout(() => {
+      req.destroy(new Error(`AI request timed out after ${AI_TIMEOUT_MS}ms`));
+    }, AI_TIMEOUT_MS);
+    req.on('error', e => { clearTimeout(timer); reject(e); });
+    req.on('close', () => clearTimeout(timer));
     req.write(payload);
     req.end();
   });
@@ -49,6 +55,10 @@ async function callAI(prompt) {
         { 'x-api-key': s.apiKey, 'anthropic-version': '2023-06-01' },
         { model, max_tokens: 512, messages: [{ role: 'user', content: prompt }] }
       );
+      if (r.status >= 400) {
+        console.warn(`[AI] anthropic responded with HTTP ${r.status}:`, r.body?.error?.message || r.body);
+        return null;
+      }
       return r.body?.content?.[0]?.text || null;
     }
 
@@ -58,6 +68,10 @@ async function callAI(prompt) {
         { 'Authorization': `Bearer ${s.apiKey}` },
         { model, max_tokens: 512, messages: [{ role: 'user', content: prompt }] }
       );
+      if (r.status >= 400) {
+        console.warn(`[AI] openai responded with HTTP ${r.status}:`, r.body?.error?.message || r.body);
+        return null;
+      }
       return r.body?.choices?.[0]?.message?.content || null;
     }
 
@@ -68,6 +82,10 @@ async function callAI(prompt) {
         {},
         { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 512 } }
       );
+      if (r.status >= 400) {
+        console.warn(`[AI] gemini responded with HTTP ${r.status}:`, r.body?.error?.message || r.body);
+        return null;
+      }
       return r.body?.candidates?.[0]?.content?.parts?.[0]?.text || null;
     }
   } catch (e) {

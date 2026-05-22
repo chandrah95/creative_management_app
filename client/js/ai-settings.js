@@ -96,6 +96,7 @@ window.saveSettings = async function () {
   const apiKey   = document.getElementById('apiKeyInput').value.trim();
 
   if (!provider) return showStatus('Select a provider.', 'error');
+  if (!model)    return showStatus('Select a model.', 'error');
   if (!apiKey && !document.getElementById('apiKeyInput').placeholder.includes('••••')) {
     return showStatus('Enter your API key.', 'error');
   }
@@ -130,7 +131,8 @@ window.generateSummary = async function () {
   out.style.display = 'none';
   try {
     const { data } = await window.api.get('/api/ai/workload-summary');
-    const lines = data.split('\n').filter(l => l.trim());
+    const text  = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    const lines = text.split('\n').filter(l => l.trim());
     out.innerHTML = lines.map(l => `<div class="ai-summary-line">${escHtml(l)}</div>`).join('');
     out.style.display = 'block';
   } catch (err) {
