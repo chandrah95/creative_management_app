@@ -188,7 +188,8 @@ a:focus:not(:focus-visible) { outline: none; }
   top: 0;
   z-index: 50;
 }
-.top-bar-left { display: flex; align-items: center; gap: 8px; }
+.top-bar-left  { display: flex; align-items: center; gap: 8px; }
+.top-bar-right { display: flex; align-items: center; gap: 8px; }
 .page-title   { font-size: 15px; font-weight: 600; }
 .breadcrumb-link  { color: var(--text-muted); font-size: 13px; }
 .breadcrumb-link:hover { color: var(--text); }

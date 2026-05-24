@@ -1374,6 +1374,7 @@ function buildDesignerLoads() {
 function getEligibleDesignersForTask(ticketProject, isStudio, isCopywriting = false) {
   return teamMembers.filter(m => {
     const ps = m.projects || [];
+    if (isStudio && isCopywriting) return ps.includes('studio') || ps.includes('copywriting');
     if (isStudio)       return ps.includes('studio');
     if (isCopywriting)  return ps.includes('copywriting');
     return ps.includes(ticketProject);
@@ -1407,7 +1408,8 @@ window.autoAssignTicket = async function (ticketId) {
     if (!withSP.length) { alert('Set story points on sub-tasks first before auto-assigning.'); return; }
 
     const loads      = buildDesignerLoads();
-    const studioKids = withSP.filter(c => c.is_need_studio);
+    const bothKids   = withSP.filter(c => c.is_need_studio && c.is_need_copywriting);
+    const studioKids = withSP.filter(c => c.is_need_studio && !c.is_need_copywriting);
     const cwKids     = withSP.filter(c => c.is_need_copywriting && !c.is_need_studio);
     const bauKids    = withSP.filter(c => !c.is_need_studio && !c.is_need_copywriting);
 
@@ -1430,6 +1432,7 @@ window.autoAssignTicket = async function (ticketId) {
       if (loads[designer.id]) loads[designer.id].usedSP += totalSP;
     };
 
+    await assignGroupTicket(bothKids,   true,  true);
     await assignGroupTicket(studioKids, true,  false);
     await assignGroupTicket(cwKids,     false, true);
 
@@ -1472,9 +1475,10 @@ window.autoAssignTicketModal = async function (ticketId) {
   if (t?.childIssues?.length) {
     const loads      = buildDesignerLoads();
     const spOf       = c => parseInt(document.getElementById(`sp-child-${c.id}`)?.value, 10) || (c.storyPoints || 0);
-    const studioKids = t.childIssues.filter(c => c.is_need_studio                              && spOf(c) > 0);
-    const cwKids     = t.childIssues.filter(c => c.is_need_copywriting && !c.is_need_studio    && spOf(c) > 0);
-    const bauKids    = t.childIssues.filter(c => !c.is_need_studio     && !c.is_need_copywriting && spOf(c) > 0);
+    const bothKids   = t.childIssues.filter(c => c.is_need_studio && c.is_need_copywriting       && spOf(c) > 0);
+    const studioKids = t.childIssues.filter(c => c.is_need_studio && !c.is_need_copywriting     && spOf(c) > 0);
+    const cwKids     = t.childIssues.filter(c => c.is_need_copywriting && !c.is_need_studio     && spOf(c) > 0);
+    const bauKids    = t.childIssues.filter(c => !c.is_need_studio && !c.is_need_copywriting    && spOf(c) > 0);
     let lastData = null;
 
     // Shared helper: assign all kids in a scope group to ONE best-fit designer
@@ -1499,6 +1503,7 @@ window.autoAssignTicketModal = async function (ticketId) {
       loads[designer.id].usedSP += totalSP;
     };
 
+    await assignGroupModal(bothKids,   true,  true);  // Both studio+CW → 1 designer from either pool
     await assignGroupModal(studioKids, true,  false); // All studio  → 1 designer
     await assignGroupModal(cwKids,     false, true);  // All CW      → 1 designer
     await assignGroupModal(bauKids,    false, false); // All design  → 1 designer
@@ -1557,7 +1562,8 @@ window.autoAssignAll = async function () {
 
   for (const t of sorted) {
     if (t.childIssues?.length) {
-      const studioKids = t.childIssues.filter(c => c.is_need_studio  && c.storyPoints > 0);
+      const bothKids   = t.childIssues.filter(c => c.is_need_studio && c.is_need_copywriting && c.storyPoints > 0);
+      const studioKids = t.childIssues.filter(c => c.is_need_studio && !c.is_need_copywriting && c.storyPoints > 0);
       const cwKids     = t.childIssues.filter(c => c.is_need_copywriting && !c.is_need_studio && c.storyPoints > 0);
       const bauKids    = t.childIssues.filter(c => !c.is_need_studio && !c.is_need_copywriting && c.storyPoints > 0);
 
@@ -1582,6 +1588,7 @@ window.autoAssignAll = async function () {
         loads[designer.id].usedSP += totalSP;
       };
 
+      await assignGroup(bothKids,   true,  true);  // Both studio+CW: best-fit from either pool
       await assignGroup(studioKids, true,  false); // Studio: one designer per ticket
       await assignGroup(cwKids,     false, true);  // CW: one designer per ticket
 
@@ -1863,7 +1870,7 @@ function buildModalContent(t) {
                 ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
               </div>
               ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
-              ${!c.is_need_copywriting && (role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
+              ${(c.is_need_studio || !c.is_need_copywriting) && (role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
               <div class="child-url-row">
                 <div class="child-url-item">
                   <span class="child-url-label">📝 Draft:</span>
@@ -1880,7 +1887,7 @@ function buildModalContent(t) {
                   ${c.final_url ? `<a href="${escHtml(c.final_url)}" target="_blank" class="url-link">Open ↗</a>` : ''}
                 </div>
               </div>` : `
-              ${!c.is_need_copywriting && (c.draft_url || c.final_url) ? `<div class="child-url-row">
+              ${(c.is_need_studio || !c.is_need_copywriting) && (c.draft_url || c.final_url) ? `<div class="child-url-row">
                 ${c.draft_url ? `<div class="child-url-item"><span class="child-url-label">📝 Draft:</span><a href="${escHtml(c.draft_url)}" target="_blank" class="url-link">${escHtml(c.draft_url)}</a></div>` : ''}
                 ${c.final_url ? `<div class="child-url-item"><span class="child-url-label">✅ Final:</span><a href="${escHtml(c.final_url)}" target="_blank" class="url-link">${escHtml(c.final_url)}</a></div>` : ''}
               </div>` : ''}`}
@@ -1889,6 +1896,7 @@ function buildModalContent(t) {
                 ${(role === 'creative_lead' || role === 'admin') ? (() => {
                   const eligible = teamMembers.filter(m => {
                     const ps = m.projects || [];
+                    if (c.is_need_studio && c.is_need_copywriting) return ps.includes('studio') || ps.includes('copywriting');
                     if (c.is_need_studio)       return ps.includes('studio');
                     if (c.is_need_copywriting)  return ps.includes('copywriting');
                     return ps.includes(t.project);
