@@ -110,9 +110,46 @@ window.addChildIssue = function () {
       </button>
     </div>
     <div class="fields-grid" id="child-fields-${idx}"></div>
+    <p class="scope-exclusive-warning" id="scope-warning-${idx}" style="display:none">
+      ⚠ Studio and Copywriting cannot both be selected for the same sub-task. Please choose one only.
+    </p>
   `;
   list.appendChild(card);
   buildFields(formConfig.childIssue.fields, document.getElementById(`child-fields-${idx}`), prefix);
+};
+
+window.studioCWExclusive = function (changedInput) {
+  const card = changedInput.closest('.child-issue-card');
+  if (!card) return;
+  const isStudio = changedInput.id.endsWith('is_need_studio');
+  const isCW     = changedInput.id.endsWith('is_need_copywriting');
+  if (!isStudio && !isCW) return;
+
+  const prefix    = changedInput.id.replace(/is_need_(studio|copywriting)$/, '');
+  const studioEl  = document.getElementById(prefix + 'is_need_studio');
+  const cwEl      = document.getElementById(prefix + 'is_need_copywriting');
+  const studioWrap = studioEl?.closest('.studio-toggle-wrap');
+  const cwWrap     = cwEl?.closest('.studio-toggle-wrap');
+  const cardIdx   = card.id.replace('child-card-', '');
+  const warning   = document.getElementById('scope-warning-' + cardIdx);
+
+  if (changedInput.checked) {
+    if (isStudio && cwEl) {
+      cwEl.checked  = false;
+      cwEl.disabled = true;
+      cwWrap?.classList.add('toggle-disabled');
+    }
+    if (isCW && studioEl) {
+      studioEl.checked  = false;
+      studioEl.disabled = true;
+      studioWrap?.classList.add('toggle-disabled');
+    }
+    if (warning) warning.style.display = 'block';
+  } else {
+    if (studioEl) { studioEl.disabled = false; studioWrap?.classList.remove('toggle-disabled'); }
+    if (cwEl)     { cwEl.disabled = false;     cwWrap?.classList.remove('toggle-disabled'); }
+    if (warning)  warning.style.display = 'none';
+  }
 };
 
 window.removeChildIssue = function (idx) {

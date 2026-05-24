@@ -1078,6 +1078,17 @@ a:focus:not(:focus-visible) { outline: none; }
 .studio-toggle-label-off { font-size: 13px; color: var(--text-muted); }
 .studio-checkbox:checked ~ .studio-toggle-label-on  { display: inline; }
 .studio-checkbox:checked ~ .studio-toggle-label-off { display: none; }
+.studio-toggle-wrap.toggle-disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.scope-exclusive-warning {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  border-radius: 4px;
+}
 
 /* Studio badge in ticket list */
 .studio-badge {

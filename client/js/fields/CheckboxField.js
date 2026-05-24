@@ -5,7 +5,7 @@ export default {
       <div class="field-group ${field.width || 'half'}" data-field="${id}">
         <label class="field-label">${field.label}</label>
         <label class="studio-toggle-wrap">
-          <input type="checkbox" id="${id}" name="${id}" class="studio-checkbox">
+          <input type="checkbox" id="${id}" name="${id}" class="studio-checkbox"${(field.name === 'is_need_studio' || field.name === 'is_need_copywriting') ? ' onchange="window.studioCWExclusive(this)"' : ''}>
           <span class="studio-toggle-track">
             <span class="studio-toggle-thumb"></span>
           </span>
