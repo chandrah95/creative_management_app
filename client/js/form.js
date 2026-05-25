@@ -293,9 +293,10 @@ window.removeChildIssue = function (idx) {
 };
 
 // ===== Form Submit =====
+let _submitting = false;
 document.getElementById('requestForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!formConfig) return;
+  if (!formConfig || _submitting) return;
 
   const mainValid = validateFields(formConfig.fields);
   if (!mainValid) return;
@@ -326,6 +327,7 @@ document.getElementById('requestForm')?.addEventListener('submit', async (e) => 
     if (!childValid) return;
   }
 
+  _submitting = true;
   const submitBtn = document.getElementById('submitBtn');
   document.getElementById('submitBtnText').style.display = 'none';
   document.getElementById('submitBtnLoader').style.display = 'inline-block';
@@ -336,10 +338,17 @@ document.getElementById('requestForm')?.addEventListener('submit', async (e) => 
     document.getElementById('formContainer').style.display = 'none';
     document.getElementById('successState').style.display = 'block';
   } catch (err) {
-    alert(err.message || 'Failed to submit request.');
-    document.getElementById('submitBtnText').style.display = 'inline';
+    // Keep button disabled to prevent duplicate ticket if the request actually succeeded.
+    // User must reload the page to try again.
     document.getElementById('submitBtnLoader').style.display = 'none';
-    submitBtn.disabled = false;
+    document.getElementById('submitBtnText').style.display = 'inline';
+    submitBtn.textContent = 'Failed — reload page to retry';
+    const existing = document.getElementById('_submitError');
+    const errEl = existing || document.createElement('p');
+    errEl.id = '_submitError';
+    errEl.style.cssText = 'color:var(--danger,#ef4444);font-size:13px;margin-top:8px';
+    errEl.textContent = err.message || 'Submission failed. Reload the page and try again.';
+    if (!existing) submitBtn.insertAdjacentElement('afterend', errEl);
   }
 });
 

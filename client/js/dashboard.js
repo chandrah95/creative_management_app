@@ -1281,7 +1281,7 @@ function leadBubble(t, isStudioView = false) {
         <div class="ticket-bubble-right">
           <span class="status-badge status-${status}">${STATUS_LABELS[status]||status}</span>
           <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openTicketModal('${t.id}')">Details</button>
-          <button class="btn btn-sm btn-delete" onclick="event.stopPropagation();deleteTicket('${t.id}',${JSON.stringify(title)})">🗑</button>
+          <button class="btn btn-sm btn-delete" data-id="${t.id}" data-title="${escHtml(title)}" onclick="event.stopPropagation();deleteTicket(this.dataset.id,this.dataset.title)">🗑</button>
         </div>
       </div>
       ${assignRow}
@@ -1885,7 +1885,7 @@ function buildModalContent(t) {
                 <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
                 ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
                 ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
-                ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto;flex-shrink:0;padding:2px 8px;font-size:11px" onclick="deleteSubtask('${t.id}','${c.id}',${JSON.stringify(childLabel(c))})">🗑</button>` : ''}
+                ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto;flex-shrink:0;padding:2px 8px;font-size:11px" data-tid="${t.id}" data-cid="${c.id}" data-label="${escHtml(childLabel(c))}" onclick="deleteSubtask(this.dataset.tid,this.dataset.cid,this.dataset.label)">🗑</button>` : ''}
               </div>
               ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
               ${(c.is_need_studio || !c.is_need_copywriting) && (role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
@@ -1967,7 +1967,7 @@ function buildModalContent(t) {
       <div class="modal-header-top">
         ${proj ? `<span class="meta-tag" style="color:${proj.color};font-weight:700">${proj.name}</span>` : ''}
         <span class="status-badge status-${status}">${STATUS_LABELS[status]||status}</span>
-        ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto" onclick="deleteTicket('${t.id}',${JSON.stringify(title)})">🗑 Delete</button>` : ''}
+        ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto" data-id="${t.id}" data-title="${escHtml(title)}" onclick="deleteTicket(this.dataset.id,this.dataset.title)">🗑 Delete</button>` : ''}
       </div>
       ${t.ticketId ? `<div class="modal-ticket-id">${escHtml(t.ticketId)}</div>` : ''}
       <h2 class="modal-title" id="modalTitle">${escHtml(title)}</h2>
