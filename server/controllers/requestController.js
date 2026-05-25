@@ -1,6 +1,7 @@
 const {
   getAllRequests, getRequestById, createRequest, updateRequest,
-  addComment, addChildComment, updateChildIssue, getAllUsers, findUserById, autoApproveStaleTickets
+  addComment, addChildComment, updateChildIssue, getAllUsers, findUserById, autoApproveStaleTickets,
+  deleteSubtask, deleteRequest
 } = require('../storage/supabaseAdapter');
 
 // AI hooks — load once; null if service file is missing (easy removal)
@@ -135,10 +136,16 @@ async function create(req, res) {
   if (req.user.role === 'creative_designer' || req.user.role === 'creative_lead') {
     return res.status(403).json({ success: false, error: 'Only requesters can create tickets' });
   }
-  const newRequest = await createRequest({
-    project, fields, childIssues: childIssues || [],
-    submittedBy: { id: req.user.id, email: req.user.email, name: req.user.name }
-  });
+  let newRequest;
+  try {
+    newRequest = await createRequest({
+      project, fields, childIssues: childIssues || [],
+      submittedBy: { id: req.user.id, email: req.user.email, name: req.user.name }
+    });
+  } catch (err) {
+    console.error('[create] createRequest failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Failed to create ticket. Please try again.' });
+  }
   res.status(201).json({ success: true, data: newRequest });
 
   if (aiService) {
@@ -252,20 +259,73 @@ async function updateChild(req, res) {
   }
 
   const ALLOWED = ['status', 'assignedTo', 'storyPoints', 'draft_url', 'final_url',
-                   'child_title', 'child_due', 'child_notes', 'is_need_studio', 'is_need_copywriting',
-                   'task_type', 'asset_type', 'asset_type_l2', 'objective_type', 'packaging_type', 'brand',
-                   'platform', 'posting_type', 'posting_date',
-                   'dlp_id', 'banner_name', 'category_id', 'catalogue_id', 'reference_id',
-                   'campaign_code'];
+                   'child_due', 'child_notes', 'is_need_studio', 'is_need_copywriting',
+                   'task_type', 'asset_type', 'asset_type_l2', 'objective_type',
+                   'dlp_id', 'banner_name', 'category_id', 'catalogue_id', 'reference_id'];
   const updates = {};
   for (const key of ALLOWED) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  if (updates.status !== undefined) {
+    if (!VALID_STATUSES.includes(updates.status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+    // Find the current subtask to get its existing status
+    const child = (request.childIssues || []).find(c => c.id === req.params.childId);
+    if (child) {
+      if (user.role === 'creative_designer' && !canDesignerTransition(child.status, updates.status)) {
+        return res.status(403).json({ success: false, error: `Cannot move from ${child.status} to ${updates.status}` });
+      }
+      if (user.role === 'creative_lead' && !canLeadTransition(child.status, updates.status)) {
+        return res.status(403).json({ success: false, error: `Cannot move from ${child.status} to ${updates.status}` });
+      }
+    }
   }
 
   const changedBy = updates.status ? actorOf(user) : null;
   const updated   = await updateChildIssue(req.params.id, req.params.childId, updates, changedBy);
   if (!updated) return res.status(404).json({ success: false, error: 'Child issue not found' });
   res.json({ success: true, data: updated });
+}
+
+async function removeChild(req, res) {
+  const user    = req.user;
+  const request = await getRequestById(req.params.id);
+  if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
+  if (user.role !== 'admin' && user.role !== 'creative_lead') {
+    return res.status(403).json({ success: false, error: 'Only admins and creative leads can delete sub-tasks' });
+  }
+  if (user.role === 'creative_lead' && !(await checkAccess(user, request))) {
+    return res.status(403).json({ success: false, error: 'Access denied' });
+  }
+  try {
+    await deleteSubtask(req.params.id, req.params.childId);
+  } catch (err) {
+    console.error('[removeChild] deleteSubtask failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Failed to delete sub-task' });
+  }
+  const updated = await getRequestById(req.params.id);
+  res.json({ success: true, data: updated });
+}
+
+async function remove(req, res) {
+  const user    = req.user;
+  const request = await getRequestById(req.params.id);
+  if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
+  if (user.role !== 'admin' && user.role !== 'creative_lead') {
+    return res.status(403).json({ success: false, error: 'Only admins and creative leads can delete tickets' });
+  }
+  if (user.role === 'creative_lead' && !(await checkAccess(user, request))) {
+    return res.status(403).json({ success: false, error: 'Access denied' });
+  }
+  try {
+    await deleteRequest(req.params.id);
+  } catch (err) {
+    console.error('[remove] deleteRequest failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Failed to delete ticket' });
+  }
+  res.json({ success: true });
 }
 
 async function getTeamMembers(req, res) {
@@ -290,4 +350,4 @@ async function getTeamMembers(req, res) {
   res.json({ success: true, data: combined });
 }
 
-module.exports = { list, get, create, update, postComment, postChildComment, updateChild, getTeamMembers };
+module.exports = { list, get, create, update, remove, removeChild, postComment, postChildComment, updateChild, getTeamMembers };

@@ -94,7 +94,7 @@ async function register(req, res) {
     userData.projects = req.body.projects.filter(p => SAFE.includes(p));
   }
 
-  const newUser = createUser(userData);
+  const newUser = await createUser(userData);
   res.status(201).json({ success: true, token: makeToken(newUser, EXPIRES_NORMAL), user: safeUser(newUser) });
 }
 

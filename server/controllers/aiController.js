@@ -1,5 +1,7 @@
+'use strict';
+
 const ai = require('../services/aiService');
-const { getAllRequests, getAllUsers } = require('../storage/localAdapter');
+const { getAllRequests, getAllUsers } = require('../storage/supabaseAdapter');
 
 function getSettings(req, res) {
   if (req.user.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin only' });
@@ -34,9 +36,11 @@ async function workloadSummary(req, res) {
   if (req.user.role !== 'admin' && req.user.role !== 'creative_lead') {
     return res.status(403).json({ success: false, error: 'Access denied' });
   }
-  const tickets   = getAllRequests({ includeApproved: false });
-  const designers = getAllUsers({ role: 'creative_designer' });
-  const summary   = await ai.generateWorkloadSummary(designers, tickets);
+  const [tickets, designers] = await Promise.all([
+    getAllRequests({ includeApproved: false }),
+    getAllUsers({ role: 'creative_designer' }),
+  ]);
+  const summary = await ai.generateWorkloadSummary(designers, tickets);
   if (!summary) return res.status(503).json({ success: false, error: 'AI not configured or unavailable. Set up provider on the AI Settings page.' });
   res.json({ success: true, data: summary });
 }

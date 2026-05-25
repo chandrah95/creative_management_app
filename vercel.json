@@ -5,11 +5,22 @@
       "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["client/**", "config/**"]
+        "includeFiles": ["config/**"]
       }
+    },
+    {
+      "src": "client/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/api/index.js" }
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/css/(.*)", "dest": "/client/css/$1" },
+    { "src": "/js/(.*)",  "dest": "/client/js/$1" },
+    { "src": "/register",    "dest": "/client/register.html" },
+    { "src": "/dashboard",   "dest": "/client/dashboard.html" },
+    { "src": "/form",        "dest": "/client/form.html" },
+    { "src": "/ai-settings", "dest": "/client/ai-settings.html" },
+    { "src": "/",            "dest": "/client/login.html" }
   ]
 }

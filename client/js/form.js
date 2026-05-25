@@ -1,6 +1,10 @@
 import '/js/api.js';
 import { buildFields, collectValues, validateFields } from './FormBuilder.js';
 
+function escHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 let formConfig = null;
 let childIssueCount = 0;
 
@@ -125,7 +129,7 @@ function renderMultitextTags(id, items) {
   if (!tagsWrap) return;
   tagsWrap.innerHTML = items.map((item, i) => `
     <span class="multitext-tag">
-      ${item}
+      ${escHtml(item)}
       <button type="button" class="multitext-tag-remove" onclick="window.multitextRemove('${id}',${i})" title="Remove">×</button>
     </span>`).join('');
 }
@@ -186,7 +190,7 @@ window.assetTypeChanged = function (prefix, category, subtype) {
 
 // ===== Task Type → Studio Lock + Asset Type Lock =====
 window.taskTypeChanged = function (select) {
-  const prefix       = select.id.replace('task_type', '');
+  const prefix        = select.id.replace('task_type', '');
   const isCopywriting = select.value === 'copywriting';
 
   // Lock / unlock studio toggle
@@ -203,20 +207,22 @@ window.taskTypeChanged = function (select) {
     }
   }
 
-  // Lock / unlock cascading asset type (EBXC / PLXC)
+  // Hide/show asset_type wrapper — hiding it makes validateFields skip it entirely
+  const assetWrapper = document.querySelector(`[data-field="${prefix}asset_type"]`);
+  if (assetWrapper) {
+    assetWrapper.style.display = isCopywriting ? 'none' : '';
+  }
+
+  // Also disable/clear the actual inputs (cascading or plain dropdown)
   const assetCat = document.getElementById(prefix + 'asset_type_cat');
   const assetSub = document.getElementById(prefix + 'asset_type');
-  if (assetCat && assetSub) {
-    if (isCopywriting) {
-      assetCat.value     = '';
-      assetCat.disabled  = true;
-      assetSub.innerHTML = '<option value="">Select type</option>';
-      assetSub.disabled  = true;
-      assetSub.value     = '';
-    } else {
-      assetCat.disabled = false;
-      // assetSub stays disabled until user picks a category via cascadingDDChange
-    }
+  if (isCopywriting) {
+    if (assetCat) { assetCat.value = ''; assetCat.disabled = true; }
+    if (assetSub) { assetSub.innerHTML = '<option value="">Select type</option>'; assetSub.disabled = true; assetSub.value = ''; }
+  } else {
+    if (assetCat) assetCat.disabled = false;
+    // assetSub (cascading) stays disabled until user picks a category; plain dropdown re-enables with wrapper
+    if (assetSub && !assetCat) assetSub.disabled = false;
   }
 };
 
@@ -305,7 +311,17 @@ document.getElementById('requestForm')?.addEventListener('submit', async (e) => 
       const prefix = `child_${idx}_`;
       const ok = validateFields(formConfig.childIssue.fields, prefix);
       if (!ok) childValid = false;
-      else childIssues.push(collectValues(formConfig.childIssue.fields, prefix));
+      else {
+        const childData = collectValues(formConfig.childIssue.fields, prefix);
+        // Cascading dropdown: getValue returns the L2 sub-type (e.g. "homepage"),
+        // but the DB needs asset_type = L1 category ("banner") and asset_type_l2 = L2 sub-type.
+        const catEl = document.getElementById(`${prefix}asset_type_cat`);
+        if (catEl && catEl.value) {
+          childData.asset_type_l2 = childData.asset_type; // move L2 to correct key
+          childData.asset_type    = catEl.value;           // L1 category (banner/tile/other)
+        }
+        childIssues.push(childData);
+      }
     });
     if (!childValid) return;
   }

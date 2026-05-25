@@ -790,7 +790,13 @@ function ticketsForDesigner(list, designerId) {
 // Applies cross-filter on top of a base list
 function applyCrossFilter(list) {
   if (crossFilter.designerId) list = ticketsForDesigner(list, crossFilter.designerId);
-  if (crossFilter.statusKey) list = list.filter(t => t.status === crossFilter.statusKey);
+  if (crossFilter.statusKey) {
+    const key = crossFilter.statusKey;
+    list = list.filter(t => {
+      const ch = t.childIssues || [];
+      return ch.length > 0 ? ch.some(c => c.status === key) : t.status === key;
+    });
+  }
   return list;
 }
 
@@ -806,7 +812,10 @@ window.applyAllFilters = function () {
   // Donut + bar charts: filtered by status cross-filter (but NOT designer cross-filter —
   // designer selection is shown as a visual highlight on those two charts)
   const donutBarSubset = crossFilter.statusKey
-    ? base.filter(t => t.status === crossFilter.statusKey)
+    ? base.filter(t => {
+        const ch = t.childIssues || [];
+        return ch.length > 0 ? ch.some(c => c.status === crossFilter.statusKey) : t.status === crossFilter.statusKey;
+      })
     : base;
   updateDonutChartData(donutBarSubset);
   updateBarChartData(donutBarSubset);
@@ -1272,6 +1281,7 @@ function leadBubble(t, isStudioView = false) {
         <div class="ticket-bubble-right">
           <span class="status-badge status-${status}">${STATUS_LABELS[status]||status}</span>
           <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openTicketModal('${t.id}')">Details</button>
+          <button class="btn btn-sm btn-delete" onclick="event.stopPropagation();deleteTicket('${t.id}',${JSON.stringify(title)})">🗑</button>
         </div>
       </div>
       ${assignRow}
@@ -1792,6 +1802,9 @@ function buildModalContent(t) {
   const role   = currentUser.role;
   const status = t.status;
 
+  // Declare canDelete early — it is referenced inside childSection (built below)
+  const canDelete = role === 'admin' || role === 'creative_lead';
+
   const nextStatuses  = (role === 'creative_lead' || role === 'admin') ? (LEAD_NEXT[status]||[]) : (DESIGNER_NEXT[status]||[]);
   // Parent status is auto-derived when sub-tasks exist — hide manual move button on parent
   const statusSection = (!t.childIssues?.length && nextStatuses.length && role !== 'requester') ? `
@@ -1872,6 +1885,7 @@ function buildModalContent(t) {
                 <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
                 ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
                 ${c.is_need_copywriting ? `<span class="cw-badge">✍️ CW</span>` : ''}
+                ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto;flex-shrink:0;padding:2px 8px;font-size:11px" onclick="deleteSubtask('${t.id}','${c.id}',${JSON.stringify(childLabel(c))})">🗑</button>` : ''}
               </div>
               ${c.child_notes ? `<p class="child-notes">${escHtml(c.child_notes)}</p>` : ''}
               ${(c.is_need_studio || !c.is_need_copywriting) && (role === 'creative_designer' || role === 'creative_lead' || role === 'admin') ? `
@@ -1953,6 +1967,7 @@ function buildModalContent(t) {
       <div class="modal-header-top">
         ${proj ? `<span class="meta-tag" style="color:${proj.color};font-weight:700">${proj.name}</span>` : ''}
         <span class="status-badge status-${status}">${STATUS_LABELS[status]||status}</span>
+        ${canDelete ? `<button class="btn btn-sm btn-delete" style="margin-left:auto" onclick="deleteTicket('${t.id}',${JSON.stringify(title)})">🗑 Delete</button>` : ''}
       </div>
       ${t.ticketId ? `<div class="modal-ticket-id">${escHtml(t.ticketId)}</div>` : ''}
       <h2 class="modal-title" id="modalTitle">${escHtml(title)}</h2>
@@ -2043,12 +2058,21 @@ window.saveChildDraftUrl = async function (ticketId, childId) {
   } catch (err) { alert(err.message); }
 };
 
-// Final URL → saves + auto-moves to approved (only if URL is valid)
+// Final URL → saves + auto-advances status based on current state and role
 window.saveChildFinalUrl = async function (ticketId, childId) {
   const url = document.getElementById(`final-${childId}`)?.value?.trim();
   if (!url) return;
   try { new URL(url); } catch { alert('Please enter a valid URL (e.g. https://…)'); return; }
-  const updates = { final_url: url, status: 'approved' };
+  const t = tickets.find(x => x.id === ticketId);
+  const c = (t?.childIssues || []).find(x => x.id === childId);
+  const role = currentUser.role;
+  const updates = { final_url: url };
+  // Auto-advance: leads/admins can approve; designers can only move to revised
+  if (role === 'creative_lead' || role === 'admin') {
+    if (c?.status === 'on_review' || c?.status === 'revised') updates.status = 'approved';
+  } else if (role === 'creative_designer') {
+    if (c?.status === 'revision') updates.status = 'revised';
+  }
   try {
     const { data } = await window.api.put(`/api/requests/${ticketId}/children/${childId}`, updates);
     document.getElementById('modalContent').innerHTML = buildModalContent(data);
@@ -2246,6 +2270,27 @@ window.assignTicketModal = async function (ticketId, sel) {
     await loadTickets();
   }
   catch (err) { alert(err.message); }
+};
+
+window.deleteSubtask = async function (ticketId, childId, label) {
+  if (!confirm(`Delete sub-task "${label}"?\n\nThis will remove the sub-task, its comments, and history. This cannot be undone.`)) return;
+  try {
+    const { data } = await window.api.delete(`/api/requests/${ticketId}/children/${childId}`);
+    document.getElementById('modalContent').innerHTML = buildModalContent(data);
+    setupCommentImagePaste();
+    showToast('Sub-task deleted');
+    await loadTickets();
+  } catch (err) { alert(err.message); }
+};
+
+window.deleteTicket = async function (id, title) {
+  if (!confirm(`Are you sure to delete "${title}"?`)) return;
+  try {
+    await window.api.delete(`/api/requests/${id}`);
+    closeTicketModal();
+    showToast('Ticket deleted');
+    await loadTickets();
+  } catch (err) { alert(err.message); }
 };
 
 window.transferDesigner = async function (designerId, sel) {

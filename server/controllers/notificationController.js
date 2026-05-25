@@ -1,8 +1,10 @@
-const { getAllRequests, findUserById } = require('../storage/localAdapter');
+'use strict';
+
+const { getAllRequests, findUserById } = require('../storage/supabaseAdapter');
 
 const REVIEW_STATUSES = new Set(['on_review', 'revised']);
 
-function getStuck(req, res) {
+async function getStuck(req, res) {
   const { role, id } = req.user;
 
   // Only relevant for creative leads (need to act) and requesters (their tickets awaiting approval)
@@ -11,21 +13,26 @@ function getStuck(req, res) {
   }
 
   const now    = Date.now();
-  const all    = getAllRequests({ includeApproved: false });
+
+  // Fetch user's projects once — not inside the loop
+  let leadProjects = [];
+  if (role === 'creative_lead') {
+    const dbUser = await findUserById(id);
+    leadProjects = (dbUser?.projects || []).filter(p => p !== 'studio' && p !== 'copywriting');
+  }
+
+  const filters = { includeApproved: false };
+  if (role === 'creative_lead' && leadProjects.length) filters.projects = leadProjects;
+  else if (role === 'requester') filters.submittedBy = id;
+
+  const all    = await getAllRequests(filters);
   const result = [];
 
   for (const r of all) {
     if (!REVIEW_STATUSES.has(r.status)) continue;
 
-    // Role-based scope filter
-    if (role === 'creative_lead') {
-      const dbUser   = findUserById(id);
-      const projects = (dbUser?.projects || []).filter(p => p !== 'studio' && p !== 'copywriting');
-      if (!projects.includes(r.project)) continue;
-    } else {
-      // requester: only their own submitted tickets
-      if (r.submittedBy?.id !== id) continue;
-    }
+    // Role-based scope filter (secondary check for requester — submittedBy filter may not be supported)
+    if (role === 'requester' && r.submittedBy?.id !== id) continue;
 
     // How long has it been waiting in this status (informational, no threshold)
     const hist  = r.statusHistory || [];

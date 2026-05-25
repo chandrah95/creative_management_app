@@ -262,6 +262,8 @@ a:focus:not(:focus-visible) { outline: none; }
 .btn-outline:hover:not(:disabled) { background: var(--primary-light); }
 .btn-ghost    { background: transparent; color: var(--text-muted); }
 .btn-ghost:hover:not(:disabled) { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+.btn-delete   { background: transparent; color: #dc2626; border: 1.5px solid transparent; }
+.btn-delete:hover:not(:disabled) { background: #fee2e2; border-color: #fca5a5; }
 .btn-full     { width: 100%; justify-content: center; padding: 11px; font-size: 14px; }
 .btn-sm       { padding: 5px 12px; font-size: 12px; }
 .btn-icon     { background: none; border: none; padding: 4px; display: flex; align-items: center; }

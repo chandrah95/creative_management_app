@@ -190,8 +190,8 @@ function buildSubtaskInsert(child, parentId, subtaskId) {
     asset_type_l2:        child.asset_type_l2        || null,
     dlp_id:               child.dlp_id              || null,
     banner_name:          child.banner_name          || null,
-    category_id:          child.category_id          || null,
-    catalogue_id:         child.catalogue_id         || null,
+    category_id:          safeInt(child.category_id),
+    catalogue_id:         safeInt(child.catalogue_id),
     reference_id:         child.reference_id         || null,
     objective_type:       child.objective_type       || null,
     draft_url:            child.draft_url            || null,
@@ -218,6 +218,17 @@ function deriveParentAssignedTo(childIssues) {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Columns are BIGINT — guard against non-numeric / unsafe JS integers only
+function safeInt(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || !Number.isSafeInteger(n)) {
+    console.warn(`[supabase] safeInt: value ${v} is not a safe integer, storing null`);
+    return null;
+  }
+  return n;
+}
 
 // ── Users ────────────────────────────────────────────────────────────────────
 
@@ -358,7 +369,7 @@ async function getAllRequests(filters = {}) {
   const { data, error } = await query;
   if (error) { console.error('[supabase] getAllRequests:', error.message); return []; }
 
-  let list = (data || []).map(ticketRowToLocal);
+  let list = (data || []).map(ticketRowToLocal).filter(t => t.status !== 'deleted');
 
   // JS-level virtual project filters
   if (filters.project === 'studio') {
@@ -409,6 +420,7 @@ async function _getRequestsWithStudio(filters) {
   }
 
   return [...regularTickets, ...crossTickets]
+    .filter(t => t.status !== 'deleted')
     .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 }
 
@@ -446,34 +458,21 @@ async function createRequest(data) {
   const { error: ticketErr } = await supabase.from('tickets').insert(ticketInsert);
   if (ticketErr) { console.error('[supabase] createRequest ticket:', ticketErr.message); throw ticketErr; }
 
-  // Parent status history
-  await supabase.from('ticket_status_history').insert({
-    ticket_id:       ticketUUID,
-    from_status:     null,
-    to_status:       'requested',
-    changed_at:      now,
-    changed_by_id:   data.submittedBy?.id   || null,
-    changed_by_name: data.submittedBy?.name || null,
-    changed_by_role: data.submittedBy?.role || null,
-  });
-
-  // Build subtasks
-  const subtaskRows  = [];
-  const historyRows  = [];
-  const subtaskUUIDs = [];
+  // Build subtask data synchronously (pure CPU work — no DB calls)
+  const subtaskRows = [];
+  const historyRows = [];
 
   const childIssues = (data.childIssues || []).map((child, idx) => {
-    const isCW = (child.task_type || '').toLowerCase() === 'copywriting';
+    const isCW   = (child.task_type || '').toLowerCase() === 'copywriting';
     const merged = { ...child, is_need_copywriting: isCW || !!child.is_need_copywriting };
     const sp     = computeChildSP(data.project, merged, data.fields || {});
     const subId  = `${ticketId}-${String(idx + 1).padStart(2, '0')}`;
     const subUUID = uuidv4();
-    subtaskUUIDs.push(subUUID);
 
     subtaskRows.push({
       id: subUUID,
-      story_points: sp !== null ? sp : (child.storyPoints ?? null),
       ...buildSubtaskInsert(merged, ticketUUID, subId),
+      story_points: sp !== null ? sp : (child.storyPoints ?? null),
     });
     historyRows.push({
       subtask_id:      subUUID,
@@ -494,19 +493,39 @@ async function createRequest(data) {
     };
   });
 
+  // Fire ticket status history + subtask inserts in parallel
+  const parallelOps = [
+    supabase.from('ticket_status_history').insert({
+      ticket_id:       ticketUUID,
+      from_status:     null,
+      to_status:       'requested',
+      changed_at:      now,
+      changed_by_id:   data.submittedBy?.id   || null,
+      changed_by_name: data.submittedBy?.name || null,
+      changed_by_role: data.submittedBy?.role || null,
+    }),
+  ];
   if (subtaskRows.length) {
-    const { error: subErr } = await supabase.from('subtasks').insert(subtaskRows);
-    if (subErr) { console.error('[supabase] createRequest subtasks:', subErr.message); throw subErr; }
-    await supabase.from('subtask_status_history').insert(historyRows);
+    parallelOps.push(
+      supabase.from('subtasks').insert(subtaskRows).then(({ error }) => {
+        if (error) { console.error('[supabase] createRequest subtasks:', error.message); throw error; }
+      })
+    );
   }
+  await Promise.all(parallelOps);
 
-  // Update parent SP
+  // Subtask history + parent SP update in parallel (subtasks already committed)
+  const postOps = [];
+  if (historyRows.length) {
+    postOps.push(supabase.from('subtask_status_history').insert(historyRows));
+  }
   const totalSP = childIssues.length && childIssues.some(c => c.storyPoints != null)
     ? childIssues.reduce((s, c) => s + (c.storyPoints || 0), 0)
     : null;
   if (totalSP !== null) {
-    await supabase.from('tickets').update({ story_points: totalSP }).eq('id', ticketUUID);
+    postOps.push(supabase.from('tickets').update({ story_points: totalSP }).eq('id', ticketUUID));
   }
+  if (postOps.length) await Promise.all(postOps);
 
   return {
     id:            ticketUUID,
@@ -606,10 +625,30 @@ async function addChildComment(requestId, childId, comment) {
 async function updateChildIssue(requestId, childId, updates, changedBy = null) {
   const now = new Date().toISOString();
 
-  // Fetch old status for history
+  // Fetch old subtask data (status for history; task/asset/studio for SP recalc)
   const { data: oldSub } = await supabase
-    .from('subtasks').select('status').eq('id', childId).maybeSingle();
+    .from('subtasks')
+    .select('status, task_type, asset_type_l1, is_need_studio')
+    .eq('id', childId)
+    .maybeSingle();
   const oldStatus = oldSub?.status || null;
+
+  // Auto-recompute SP when task_type / asset_type / is_need_studio changes,
+  // unless the caller is explicitly overriding storyPoints
+  const spDriven = ['task_type', 'asset_type', 'is_need_studio'];
+  if (spDriven.some(f => updates[f] !== undefined) && updates.storyPoints === undefined) {
+    const merged = {
+      task_type:      updates.task_type      ?? oldSub?.task_type,
+      asset_type:     updates.asset_type     ?? oldSub?.asset_type_l1,
+      is_need_studio: updates.is_need_studio ?? !!oldSub?.is_need_studio,
+    };
+    const { data: parent } = await supabase
+      .from('tickets').select('project, brand').eq('id', requestId).maybeSingle();
+    if (parent) {
+      const sp = computeChildSP(parent.project, merged, { brand: parent.brand });
+      if (sp !== null) updates.storyPoints = sp;
+    }
+  }
 
   // Build subtask update payload
   const db = {};
@@ -631,8 +670,11 @@ async function updateChildIssue(requestId, childId, updates, changedBy = null) {
     catalogue_id:        'catalogue_id',
     reference_id:        'reference_id',
   };
+  const INT_COLS = new Set(['category_id', 'catalogue_id']);
   for (const [local, col] of Object.entries(FIELD_MAP)) {
-    if (updates[local] !== undefined) db[col] = updates[local];
+    if (updates[local] !== undefined) {
+      db[col] = INT_COLS.has(col) ? safeInt(updates[local]) : updates[local];
+    }
   }
   // asset_type (local) → asset_type_l1 (DB)
   if (updates.asset_type !== undefined) db.asset_type_l1 = updates.asset_type;
@@ -693,6 +735,46 @@ async function autoApproveStaleTickets() {
   if (error) console.error('[supabase] autoApproveStaleTickets:', error.message);
 }
 
+async function deleteSubtask(ticketId, childId) {
+  await supabase.from('subtask_comments').delete().eq('subtask_id', childId);
+  await supabase.from('subtask_status_history').delete().eq('subtask_id', childId);
+  const { error } = await supabase.from('subtasks').delete().eq('id', childId).eq('parent_id', ticketId);
+  if (error) { console.error('[supabase] deleteSubtask:', error.message); throw error; }
+  // Recalculate parent SP and assignedTo after deletion
+  const { data: remaining } = await supabase
+    .from('subtasks')
+    .select('story_points, assigned_to_id, assigned_to_snapshot, is_need_studio, is_need_copywriting')
+    .eq('parent_id', ticketId);
+  const children = (remaining || []).map(r => ({
+    storyPoints:         r.story_points,
+    // Use snapshot only — never fabricate a partial {id}-only object,
+    // which would corrupt the parent snapshot on the next recalculation
+    // (deriveParentAssignedTo requires assignedTo.id to filter, but a stub
+    // with no name/email/role would be stored as the parent's snapshot).
+    assignedTo:          r.assigned_to_snapshot || null,
+    is_need_studio:      r.is_need_studio,
+    is_need_copywriting: r.is_need_copywriting,
+  }));
+  const totalSP = children.length && children.some(c => c.storyPoints != null)
+    ? children.reduce((s, c) => s + (c.storyPoints || 0), 0)
+    : null;
+  const parentAssignedTo = deriveParentAssignedTo(children);
+  await supabase.from('tickets').update({
+    story_points:         totalSP,
+    assigned_to_id:       parentAssignedTo?.id       || null,
+    assigned_to_snapshot: parentAssignedTo            || null,
+    updated_at:           new Date().toISOString(),
+  }).eq('id', ticketId);
+}
+
+async function deleteRequest(id) {
+  const { error } = await supabase
+    .from('tickets')
+    .update({ status: 'deleted', updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { console.error('[supabase] deleteRequest:', error.message); throw error; }
+}
+
 // No-op — schema is managed externally via Supabase SQL editor
 function initStorage() {
   console.log('[supabase] Using Supabase storage — schema managed externally');
@@ -704,5 +786,6 @@ module.exports = {
   createUser, updateUser, updateUserLead,
   getAllRequests, getRequestById, createRequest, updateRequest,
   addComment, addChildComment, updateChildIssue,
+  deleteSubtask, deleteRequest,
   autoApproveStaleTickets,
 };

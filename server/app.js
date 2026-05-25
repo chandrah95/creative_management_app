@@ -45,6 +45,14 @@ app.get('/ai-settings', (_, res) => res.sendFile(path.join(__dirname, '../client
 
 initStorage();
 
+// Global error handler — catches unhandled errors thrown by any async route handler
+// Without this, Express 4.x leaves the response hanging instead of sending a 500
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error('[express] unhandled error:', err.message || err);
+  if (res.headersSent) return;
+  res.status(500).json({ success: false, error: 'An unexpected server error occurred.' });
+});
+
 // Only start the HTTP server when run directly (not when imported by Vercel)
 if (require.main === module) {
   app.listen(PORT, () => console.log(`Creative Hub running at http://localhost:${PORT}`));
