@@ -1,19 +1,23 @@
 export default {
   render(field, prefix = '') {
     const id = prefix + field.name;
+    const inputType = field.input_type || 'text';
+    const extraAttrs = inputType === 'number'
+      ? 'inputmode="numeric" pattern="[0-9]*"'
+      : (field.maxLength ? `maxlength="${field.maxLength}"` : '');
     return `
-      <div class="field-group ${field.width || 'full'}" data-field="${id}">
+      <div class="field-group ${field.width || 'full'}" data-field="${id}"${field.hidden ? ' style="display:none"' : ''}>
         <label class="field-label" for="${id}">
           ${field.label}${field.required ? '<span class="required">*</span>' : ''}
         </label>
         <input
-          type="text"
+          type="${inputType}"
           id="${id}"
           name="${id}"
           class="field-input"
           placeholder="${field.placeholder || ''}"
           ${field.required ? 'required' : ''}
-          ${field.maxLength ? `maxlength="${field.maxLength}"` : ''}
+          ${extraAttrs}
         />
         <span class="field-error" id="${id}-error"></span>
       </div>`;

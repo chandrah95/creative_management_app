@@ -1,12 +1,13 @@
-const { findUserById, getAllLeads, getAllUsers, updateUserLead, updateUser } = require('../storage/localAdapter');
+const { findUserById, getAllLeads, getAllUsers, updateUserLead, updateUser } = require('../storage/supabaseAdapter');
 
-function listLeads(req, res) {
-  res.json({ success: true, data: getAllLeads() });
+async function listLeads(req, res) {
+  const leads = await getAllLeads();
+  res.json({ success: true, data: leads });
 }
 
-function transferDesigner(req, res) {
+async function transferDesigner(req, res) {
   const user     = req.user;
-  const designer = findUserById(req.params.id);
+  const designer = await findUserById(req.params.id);
 
   if (!designer || designer.role !== 'creative_designer') {
     return res.status(404).json({ success: false, error: 'Designer not found' });
@@ -16,18 +17,18 @@ function transferDesigner(req, res) {
   }
 
   const { leadId } = req.body;
-  const targetLead = findUserById(leadId);
+  const targetLead = await findUserById(leadId);
   if (!targetLead || targetLead.role !== 'creative_lead') {
     return res.status(400).json({ success: false, error: 'Invalid target lead' });
   }
 
-  const updated = updateUserLead(req.params.id, leadId);
+  const updated = await updateUserLead(req.params.id, leadId);
   res.json({ success: true, data: updated });
 }
 
-function updateCapacity(req, res) {
+async function updateCapacity(req, res) {
   const user     = req.user;
-  const designer = findUserById(req.params.id);
+  const designer = await findUserById(req.params.id);
 
   if (!designer || designer.role !== 'creative_designer') {
     return res.status(404).json({ success: false, error: 'Designer not found' });
@@ -41,7 +42,7 @@ function updateCapacity(req, res) {
     return res.status(400).json({ success: false, error: 'maxStoryPoints must be a positive integer' });
   }
 
-  const updated = updateUser(req.params.id, { maxStoryPoints: Math.floor(maxStoryPoints) });
+  const updated = await updateUser(req.params.id, { maxStoryPoints: Math.floor(maxStoryPoints) });
   res.json({ success: true, data: updated });
 }
 

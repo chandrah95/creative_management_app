@@ -2,44 +2,41 @@
   "id": "ocsp",
   "name": "Offline Collateral",
   "fields": [
-    { "type": "input",    "name": "title",          "label": "Request Title",          "placeholder": "e.g. Ramadan In-Store Poster", "required": true,  "width": "full" },
-    { "type": "textarea", "name": "description",    "label": "Brief",                  "placeholder": "Describe what this collateral should communicate", "required": true, "width": "full", "rows": 4 },
-    { "type": "dropdown", "name": "collateral_type","label": "Collateral Type",        "required": true, "width": "half",
-      "options": [
-        { "value": "poster",    "label": "Poster" },
-        { "value": "flyer",     "label": "Flyer / Leaflet" },
-        { "value": "banner",    "label": "Roll-up / X-Banner" },
-        { "value": "brochure",  "label": "Brochure / Catalog" },
-        { "value": "billboard", "label": "Billboard / OOH" },
-        { "value": "signage",   "label": "In-store Signage" },
-        { "value": "other",     "label": "Other" }
-      ]
-    },
-    { "type": "dropdown", "name": "priority",       "label": "Priority",               "required": true, "width": "half",
-      "options": [
-        { "value": "low",      "label": "Low" },
-        { "value": "medium",   "label": "Medium" },
-        { "value": "high",     "label": "High" },
-        { "value": "critical", "label": "Critical" }
-      ]
-    },
-    { "type": "date",     "name": "deadline",       "label": "Print / Delivery Date",  "required": true,  "width": "half" },
-    { "type": "input",    "name": "dimensions",     "label": "Dimensions / Size",      "placeholder": "e.g. A3 (297x420 mm)",        "required": false, "width": "half" },
-    { "type": "number",   "name": "quantity",       "label": "Print Quantity",         "required": false, "width": "half", "min": 1, "max": 99999, "default": 100 },
-    { "type": "number",   "name": "revisions",      "label": "Max Revisions",          "required": false, "width": "half", "min": 1, "max": 10,    "default": 2 },
-    { "type": "url",      "name": "reference_url",  "label": "Reference / Guideline",  "placeholder": "https://...", "required": false, "width": "full" },
-    { "type": "textarea", "name": "notes",          "label": "Additional Notes",       "required": false, "width": "full", "rows": 3 }
+    { "type": "input",    "name": "title",         "label": "Campaign Name",  "placeholder": "e.g. Ramadan In-Store Poster", "required": true,  "width": "full" },
+    { "type": "textarea", "name": "description",   "label": "Description",    "placeholder": "Describe what this collateral should communicate", "required": false, "width": "full", "rows": 3 },
+    { "type": "url",      "name": "brief_deck_url","label": "Brief Deck URL", "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "date",     "name": "live_date",     "label": "Live Date",      "required": true,  "width": "half" }
   ],
   "childIssue": {
     "enabled": true,
-    "label": "Add Size / Variant",
+    "label": "Add Asset",
     "fields": [
-      { "type": "input",    "name": "child_title",   "label": "Variant Name",    "placeholder": "e.g. A4 version", "required": true,  "width": "full" },
-      { "type": "input",    "name": "child_type",    "label": "Dimensions",      "placeholder": "e.g. 210x297mm",  "required": false, "width": "half" },
-      { "type": "date",     "name": "child_due",        "label": "Due Date",           "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_studio",       "label": "Needs Studio Team?",       "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_copywriting",  "label": "Needs Copywriting?",       "required": false, "width": "half" },
-      { "type": "textarea", "name": "child_notes",     "label": "Notes",              "required": false, "width": "full", "rows": 2 }
+      { "type": "dropdown", "name": "task_type", "label": "Task Type", "required": true, "width": "half", "onchange": "window.taskTypeChanged(this)",
+        "options": [
+          { "value": "product",     "label": "Product" },
+          { "value": "copywriting", "label": "Copywriting" }
+        ]
+      },
+      { "type": "dropdown", "name": "asset_type", "label": "Asset Type", "required": true, "width": "half",
+        "options": [
+          { "value": "flyer",           "label": "Flyer" },
+          { "value": "box_carton",      "label": "Box/Carton" },
+          { "value": "merchandise",     "label": "Merchandise" },
+          { "value": "presentation",    "label": "Presentation Deck" },
+          { "value": "poster",          "label": "Poster" },
+          { "value": "tripod_banner",   "label": "Tripod Banner" },
+          { "value": "spanduk",         "label": "Spanduk" },
+          { "value": "billboard",       "label": "Billboard" },
+          { "value": "physical_voucher","label": "Physical Voucher" },
+          { "value": "sticker",         "label": "Sticker" },
+          { "value": "catalogue",       "label": "Catalogue" },
+          { "value": "mockup",          "label": "Mockup" },
+          { "value": "special_project", "label": "Special Project" },
+          { "value": "key_visual",      "label": "Key Visual" },
+          { "value": "others",          "label": "Others" }
+        ]
+      },
+      { "type": "checkbox", "name": "is_need_studio", "label": "Needs Studio Team?", "required": false, "width": "half" }
     ]
   }
 }

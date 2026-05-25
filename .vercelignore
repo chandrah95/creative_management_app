@@ -1,0 +1,4 @@
+server/data/
+server/scripts/
+.env
+.env.example

@@ -10,7 +10,7 @@ export default {
           ${field.label}${field.required ? '<span class="required">*</span>' : ''}
         </label>
         <div class="select-wrapper">
-          <select id="${id}" name="${id}" class="field-select" ${field.required ? 'required' : ''}>
+          <select id="${id}" name="${id}" class="field-select" ${field.required ? 'required' : ''}${field.onchange ? ` onchange="${field.onchange}"` : ''}>
             <option value="">Select ${field.label}</option>
             ${options}
           </select>

@@ -2,61 +2,38 @@
   "id": "smxc",
   "name": "Social Media",
   "fields": [
-    { "type": "input",    "name": "title",         "label": "Content Title",          "placeholder": "e.g. Ramadan Campaign Post", "required": true,  "width": "full" },
-    { "type": "textarea", "name": "description",   "label": "Content Brief",          "placeholder": "What should this content communicate?", "required": true, "width": "full", "rows": 4 },
-    { "type": "dropdown", "name": "platform",      "label": "Platform",               "required": true, "width": "half",
+    { "type": "input",       "name": "title",         "label": "Campaign Name",        "placeholder": "e.g. Ramadan Campaign", "required": true,  "width": "full" },
+    { "type": "textarea",    "name": "description",   "label": "Description",          "placeholder": "What should this content communicate?", "required": false, "width": "full", "rows": 3 },
+    { "type": "url",         "name": "brief_deck_url","label": "Brief Deck URL",        "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "multiselect", "name": "platform",      "label": "Platform",             "required": true,  "width": "full",
       "options": [
-        { "value": "instagram",  "label": "Instagram" },
-        { "value": "facebook",   "label": "Facebook" },
-        { "value": "twitter_x",  "label": "Twitter / X" },
-        { "value": "linkedin",   "label": "LinkedIn" },
-        { "value": "tiktok",     "label": "TikTok" },
-        { "value": "youtube",    "label": "YouTube" },
-        { "value": "multi",      "label": "Multi-platform" }
+        { "value": "instagram", "label": "Instagram" },
+        { "value": "tiktok",    "label": "TikTok" },
+        { "value": "others",    "label": "Others" }
       ]
     },
-    { "type": "dropdown", "name": "content_type",  "label": "Content Type",           "required": true, "width": "half",
+    { "type": "multiselect", "name": "posting_type",  "label": "Posting Type",         "required": true,  "width": "full",
       "options": [
-        { "value": "feed_post",  "label": "Feed Post" },
-        { "value": "story",      "label": "Story / Reel" },
-        { "value": "carousel",   "label": "Carousel" },
-        { "value": "cover",      "label": "Cover / Banner" },
-        { "value": "other",      "label": "Other" }
+        { "value": "reels", "label": "Reels" },
+        { "value": "story", "label": "Story" },
+        { "value": "post",  "label": "Post" }
       ]
     },
-    { "type": "dropdown", "name": "priority",      "label": "Priority",               "required": true, "width": "half",
-      "options": [
-        { "value": "low",      "label": "Low" },
-        { "value": "medium",   "label": "Medium" },
-        { "value": "high",     "label": "High" },
-        { "value": "critical", "label": "Critical" }
-      ]
-    },
-    { "type": "date",     "name": "deadline",      "label": "Planned Post Date",      "required": true,  "width": "half" },
-    { "type": "number",   "name": "slides",        "label": "Slides / Frames",        "required": false, "width": "half", "min": 1, "max": 20, "default": 1 },
-    { "type": "number",   "name": "revisions",     "label": "Max Revisions",          "required": false, "width": "half", "min": 1, "max": 10, "default": 2 },
-    { "type": "url",      "name": "reference_url", "label": "Reference / Mood Board", "placeholder": "https://...", "required": false, "width": "full" },
-    { "type": "textarea", "name": "caption_draft", "label": "Caption Draft",          "placeholder": "Paste draft caption here (optional)...", "required": false, "width": "full", "rows": 3 },
-    { "type": "textarea", "name": "notes",         "label": "Additional Notes",       "required": false, "width": "full", "rows": 2 }
+    { "type": "date",        "name": "posting_date",  "label": "Estimate Posting Date","required": false, "width": "half" }
   ],
   "childIssue": {
     "enabled": true,
-    "label": "Add Platform Variant",
+    "label": "Add Content",
     "fields": [
-      { "type": "input",    "name": "child_title",    "label": "Variant Title",  "required": true,  "width": "full" },
-      { "type": "dropdown", "name": "child_type",     "label": "Platform",       "required": true,  "width": "half",
+      { "type": "dropdown", "name": "task_type",      "label": "Task Type",            "required": true,  "width": "half", "onchange": "window.taskTypeChanged(this)",
         "options": [
-          { "value": "instagram", "label": "Instagram" },
-          { "value": "facebook",  "label": "Facebook" },
-          { "value": "tiktok",    "label": "TikTok" },
-          { "value": "linkedin",  "label": "LinkedIn" },
-          { "value": "other",     "label": "Other" }
+          { "value": "image",       "label": "Image" },
+          { "value": "motion",      "label": "Motion" },
+          { "value": "video",       "label": "Video" },
+          { "value": "copywriting", "label": "Copywriting" }
         ]
       },
-      { "type": "date",     "name": "child_due",         "label": "Due Date",              "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_studio",       "label": "Needs Studio Team?",       "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_copywriting",  "label": "Needs Copywriting?",       "required": false, "width": "half" },
-      { "type": "textarea", "name": "child_notes",       "label": "Notes",                 "required": false, "width": "full", "rows": 2 }
+      { "type": "checkbox", "name": "is_need_studio", "label": "Needs Studio Team?",  "required": false, "width": "half" }
     ]
   }
 }

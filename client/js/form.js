@@ -91,6 +91,135 @@ function renderForm(config) {
   document.getElementById('formContainer').style.display = 'block';
 }
 
+// ===== Multi-Text Input (dimensions etc.) =====
+window.multitextAdd = function (id) {
+  const textInput  = document.getElementById(id + '-input');
+  const hiddenInput = document.getElementById(id);
+  const tagsWrap   = document.getElementById(id + '-tags');
+  if (!textInput || !hiddenInput || !tagsWrap) return;
+
+  const val = textInput.value.trim();
+  if (!val) return;
+
+  const items = JSON.parse(hiddenInput.value || '[]');
+  items.push(val);
+  hiddenInput.value = JSON.stringify(items);
+  textInput.value   = '';
+  renderMultitextTags(id, items);
+  textInput.focus();
+};
+
+window.multitextRemove = function (id, idx) {
+  const hiddenInput = document.getElementById(id);
+  const tagsWrap   = document.getElementById(id + '-tags');
+  if (!hiddenInput || !tagsWrap) return;
+
+  const items = JSON.parse(hiddenInput.value || '[]');
+  items.splice(idx, 1);
+  hiddenInput.value = JSON.stringify(items);
+  renderMultitextTags(id, items);
+};
+
+function renderMultitextTags(id, items) {
+  const tagsWrap = document.getElementById(id + '-tags');
+  if (!tagsWrap) return;
+  tagsWrap.innerHTML = items.map((item, i) => `
+    <span class="multitext-tag">
+      ${item}
+      <button type="button" class="multitext-tag-remove" onclick="window.multitextRemove('${id}',${i})" title="Remove">×</button>
+    </span>`).join('');
+}
+
+// ===== Cascading Dropdown =====
+window.cascadingDDChange = function (parentSelect) {
+  const targetId = parentSelect.dataset.target;
+  const groups   = JSON.parse(parentSelect.dataset.groups.replace(/&#39;/g, "'"));
+  const child    = document.getElementById(targetId);
+  if (!child) return;
+  const selected = groups.find(g => g.value === parentSelect.value);
+  child.innerHTML = '<option value="">Select type</option>';
+  if (selected) {
+    child.disabled = false;
+    selected.options.forEach(opt => {
+      const o = document.createElement('option');
+      o.value   = opt.value;
+      o.textContent = opt.label;
+      child.appendChild(o);
+    });
+  } else {
+    child.disabled = true;
+    child.value = '';
+  }
+  // Reset conditional fields whenever category changes
+  if (window.assetSubTypeChanged) window.assetSubTypeChanged(child);
+};
+
+// ===== Asset Sub-type → Conditional Fields (EBXC / PLXC) =====
+window.assetSubTypeChanged = function (subSelect) {
+  const subId    = subSelect.id;                          // e.g. "child_1_asset_type"
+  const prefix   = subId.replace('asset_type', '');       // e.g. "child_1_"
+  const catSelect = document.getElementById(subId + '_cat');
+  const category  = catSelect ? catSelect.value : '';
+  window.assetTypeChanged(prefix, category, subSelect.value);
+};
+
+window.assetTypeChanged = function (prefix, category, subtype) {
+  function setField(name, show, required) {
+    const wrap  = document.querySelector(`[data-field="${prefix}${name}"]`);
+    const input = document.getElementById(`${prefix}${name}`);
+    if (!wrap) return;
+    if (show) {
+      wrap.style.display = '';
+      if (input) required ? input.setAttribute('required', '') : input.removeAttribute('required');
+    } else {
+      wrap.style.display = 'none';
+      if (input) { input.removeAttribute('required'); input.value = ''; }
+    }
+  }
+
+  setField('dlp_id',      subtype === 'dlp',                                         true);
+  setField('banner_name', category === 'banner' && subtype !== 'dlp' && subtype !== '', true);
+  setField('category_id', subtype === 'tile_category',                               true);
+  setField('catalogue_id',subtype === 'tile_catalogue',                              true);
+  setField('reference_id',subtype === 'big_catalogue' || category === 'other',       false);
+};
+
+// ===== Task Type → Studio Lock + Asset Type Lock =====
+window.taskTypeChanged = function (select) {
+  const prefix       = select.id.replace('task_type', '');
+  const isCopywriting = select.value === 'copywriting';
+
+  // Lock / unlock studio toggle
+  const studioEl   = document.getElementById(prefix + 'is_need_studio');
+  const studioWrap = studioEl?.closest('.studio-toggle-wrap');
+  if (studioEl) {
+    if (isCopywriting) {
+      studioEl.checked  = false;
+      studioEl.disabled = true;
+      studioWrap?.classList.add('toggle-disabled');
+    } else {
+      studioEl.disabled = false;
+      studioWrap?.classList.remove('toggle-disabled');
+    }
+  }
+
+  // Lock / unlock cascading asset type (EBXC / PLXC)
+  const assetCat = document.getElementById(prefix + 'asset_type_cat');
+  const assetSub = document.getElementById(prefix + 'asset_type');
+  if (assetCat && assetSub) {
+    if (isCopywriting) {
+      assetCat.value     = '';
+      assetCat.disabled  = true;
+      assetSub.innerHTML = '<option value="">Select type</option>';
+      assetSub.disabled  = true;
+      assetSub.value     = '';
+    } else {
+      assetCat.disabled = false;
+      // assetSub stays disabled until user picks a category via cascadingDDChange
+    }
+  }
+};
+
 // ===== Child Issues =====
 window.addChildIssue = function () {
   if (!formConfig?.childIssue?.fields) return;

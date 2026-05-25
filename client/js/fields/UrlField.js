@@ -1,5 +1,3 @@
-const URL_REGEX = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w\-./?%&=]*)?$/i;
-
 export default {
   render(field, prefix = '') {
     const id = prefix + field.name;
@@ -27,7 +25,9 @@ export default {
 
   validate(value, field) {
     if (!value && field.required) return `${field.label} is required`;
-    if (value && !URL_REGEX.test(value)) return 'Please enter a valid URL';
+    if (value) {
+      try { new URL(value); } catch { return 'Please enter a valid URL'; }
+    }
     return null;
   },
 

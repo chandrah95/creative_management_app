@@ -62,15 +62,37 @@ function seedDefaultUsers() {
     }
   }
 
+  // Remove legacy accounts that are no longer part of the single-agent setup
+  const removedEmails = [
+    'vellindia@company.com',
+    'designer1@company.com', 'designer2@company.com',
+    'chandra.hermawan@astronauts.id', 'sheren@astronauts.id'
+  ];
+  const beforeRemove = users.length;
+  users = users.filter(u => !removedEmails.includes(u.email));
+  if (users.length !== beforeRemove) updated = true;
+
+  // Ensure Andhika's scope: EBXC, PLXC, Studio
+  const agent = users.find(u => u.email === 'andhika.zefanya@astronauts.id');
+  if (agent) {
+    const target = ['ebxc','plxc','studio'];
+    const needsUpdate = JSON.stringify((agent.projects || []).slice().sort()) !== JSON.stringify(target.slice().sort());
+    if (needsUpdate) { agent.projects = target; agent.department = 'EBXC/PLXC/Studio'; updated = true; }
+  }
+
+  // Ensure Vellindia's scope: PAC, OCSP, SMXC, DAXC
+  const vell = users.find(u => u.email === 'vellindia@astronauts.id');
+  if (vell) {
+    const target = ['pac','ocsp','smxc','daxc'];
+    const needsUpdate = JSON.stringify((vell.projects || []).slice().sort()) !== JSON.stringify(target.slice().sort());
+    if (needsUpdate) { vell.projects = target; vell.department = 'PAC/OCSP/SMXC/DAXC'; updated = true; }
+  }
+
   const seeds = [
-    { email:'andhika.zefanya@astronauts.id', password:'lead123',    name:'Andhika Zefanya',  role:'creative_lead',     projects:['smxc','daxc','studio','copywriting'], department:'Out App 1 & Studio' },
-    { email:'vellindia@company.com',          password:'lead123',    name:'Vellindia',         role:'creative_lead',     projects:['ebxc','plxc','ocsp','pac'],           department:'In App & Out App 2' },
-    { email:'designer1@company.com',          password:'design123',  name:'Designer One',      role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
-    { email:'designer2@company.com',          password:'design123',  name:'Designer Two',      role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
-    { email:'chandra.hermawan@astronauts.id', password:'design123',  name:'Chandra Hermawan',  role:'creative_designer', projects:['smxc','daxc'],                        department:'Out App 1', scopes:['Out App 1'] },
-    { email:'sheren@astronauts.id',           password:'design123',  name:'Sheren',            role:'creative_designer', projects:['studio'],                             department:'Studio',    scopes:['Studio'] },
-    { email:'requester@company.com',          password:'request123', name:'Requester One',     role:'requester',         projects:[], department:'' },
-    { email:'requester2@company.com',         password:'request123', name:'Requester Two',     role:'requester',         projects:[], department:'' }
+    { email:'andhika.zefanya@astronauts.id', password:'lead123', name:'Andhika Zefanya', role:'creative_lead', projects:['ebxc','plxc','studio'],        department:'EBXC/PLXC/Studio'   },
+    { email:'vellindia@astronauts.id',        password:'lead123', name:'Vellindia',        role:'creative_lead', projects:['pac','ocsp','smxc','daxc'],    department:'PAC/OCSP/SMXC/DAXC' },
+    { email:'requester@company.com',          password:'request123', name:'Requester One',    role:'requester',     projects:[], department:'' },
+    { email:'requester2@company.com',         password:'request123', name:'Requester Two',    role:'requester',     projects:[], department:'' },
   ];
 
   for (const seed of seeds) {
@@ -80,21 +102,47 @@ function seedDefaultUsers() {
       users.push({ id: uuidv4(), ...rest, password: bcrypt.hashSync(password, 10) });
       updated = true;
     } else if (existing.password && !existing.password.startsWith('$2')) {
-      // Migrate plain-text password to bcrypt hash
       existing.password = bcrypt.hashSync(existing.password, 10);
       updated = true;
     }
   }
 
-  // Link designers to Andhika Zefanya if they have no lead yet
-  const azLead = users.find(u => u.email === 'andhika.zefanya@astronauts.id');
-  if (azLead) {
-    const azDesignerEmails = ['designer1@company.com','designer2@company.com','chandra.hermawan@astronauts.id','sheren@astronauts.id'];
-    for (const u of users) {
-      if (u.role === 'creative_designer' && azDesignerEmails.includes(u.email) && !u.leadId) {
-        u.leadId = azLead.id;
-        updated  = true;
-      }
+  // ── Team member seeds (must run after leads are in the array so leadId resolves) ──
+  const andhikaUser   = users.find(u => u.email === 'andhika.zefanya@astronauts.id');
+  const vellindiaUser = users.find(u => u.email === 'vellindia@astronauts.id');
+
+  const teamSeeds = [
+    // ── Andhika's team ──────────────────────────────────────────────────────────
+    // 2 designers: EBXC & PLXC
+    { email:'designer1.ebplxc@astronauts.id',   password:'design123', name:'Designer EB/PL 1',     role:'creative_designer', projects:['ebxc','plxc'],   department:'EBXC/PLXC',   leadId: andhikaUser?.id },
+    { email:'designer2.ebplxc@astronauts.id',   password:'design123', name:'Designer EB/PL 2',     role:'creative_designer', projects:['ebxc','plxc'],   department:'EBXC/PLXC',   leadId: andhikaUser?.id },
+    // 2 studio: all projects (virtual project filter handles cross-project visibility)
+    { email:'studio1@astronauts.id',            password:'studio123', name:'Studio 1',             role:'creative_designer', projects:['studio'],         department:'Studio',       leadId: andhikaUser?.id },
+    { email:'studio2@astronauts.id',            password:'studio123', name:'Studio 2',             role:'creative_designer', projects:['studio'],         department:'Studio',       leadId: andhikaUser?.id },
+    // 1 copywriting
+    { email:'copywriting1@astronauts.id',       password:'copy123',   name:'Copywriting 1',        role:'creative_designer', projects:['copywriting'],    department:'Copywriting',  leadId: andhikaUser?.id },
+
+    // ── Vellindia's team ─────────────────────────────────────────────────────────
+    // 2 designers: PAC & OCSP
+    { email:'designer1.pacocsp@astronauts.id',  password:'design123', name:'Designer PAC/OCSP 1',  role:'creative_designer', projects:['pac','ocsp'],    department:'PAC/OCSP',     leadId: vellindiaUser?.id },
+    { email:'designer2.pacocsp@astronauts.id',  password:'design123', name:'Designer PAC/OCSP 2',  role:'creative_designer', projects:['pac','ocsp'],    department:'PAC/OCSP',     leadId: vellindiaUser?.id },
+    // 2 designers: SMXC & DAXC
+    { email:'designer1.smxcdaxc@astronauts.id', password:'design123', name:'Designer SMXC/DAXC 1', role:'creative_designer', projects:['smxc','daxc'],   department:'SMXC/DAXC',   leadId: vellindiaUser?.id },
+    { email:'designer2.smxcdaxc@astronauts.id', password:'design123', name:'Designer SMXC/DAXC 2', role:'creative_designer', projects:['smxc','daxc'],   department:'SMXC/DAXC',   leadId: vellindiaUser?.id },
+    // 1 copywriting
+    { email:'copywriting2@astronauts.id',       password:'copy123',   name:'Copywriting 2',        role:'creative_designer', projects:['copywriting'],    department:'Copywriting',  leadId: vellindiaUser?.id },
+  ];
+
+  for (const seed of teamSeeds) {
+    if (!seed.leadId) continue;
+    const existing = users.find(u => u.email === seed.email);
+    if (!existing) {
+      const { password, ...rest } = seed;
+      users.push({ id: uuidv4(), ...rest, password: bcrypt.hashSync(password, 10) });
+      updated = true;
+    } else if (existing.password && !existing.password.startsWith('$2')) {
+      existing.password = bcrypt.hashSync(existing.password, 10);
+      updated = true;
     }
   }
 
@@ -147,6 +195,47 @@ function makeChildTicketId(parentId, childIndex) {
   return `${parentId}-${String(childIndex + 1).padStart(2, '0')}`;
 }
 
+// ── Story Points ────────────────────────────────────────────────────────────
+
+const TASK_TYPE_SP = { image: 1, motion: 2, video: 8, copywriting: 2 };
+
+const OCSP_ASSET_SP = {
+  flyer: 2, box_carton: 2, merchandise: 2, presentation: 8, poster: 2,
+  tripod_banner: 2, spanduk: 1, billboard: 16, physical_voucher: 1, sticker: 2,
+  catalogue: 4, mockup: 1, special_project: 2, key_visual: 3, others: 2
+};
+
+const PAC_BRAND_SP = {
+  abasics: 5, astro_goods: 9, astro_cafe: 5, astro_bakery: 5, astro_farm: 5
+};
+
+// Studio override SP per project (null = no studio SP defined)
+const STUDIO_SP = { ebxc: 32, plxc: 32, pac: 32, ocsp: 32 };
+
+function computeChildSP(project, child, parentFields = {}) {
+  const proj     = (project || '').toLowerCase();
+  const tt       = (child.task_type || '').toLowerCase();
+  const at       = (child.asset_type || '').toLowerCase();
+  const isStudio = !!child.is_need_studio;
+
+  if (isStudio && STUDIO_SP[proj] != null) return STUDIO_SP[proj];
+
+  switch (proj) {
+    case 'ebxc': case 'plxc': case 'smxc': case 'daxc':
+      return TASK_TYPE_SP[tt] ?? null;
+    case 'pac': {
+      if (tt === 'copywriting') return TASK_TYPE_SP.copywriting;
+      const brand = (parentFields.brand || child.brand || '').toLowerCase();
+      return PAC_BRAND_SP[brand] ?? null;
+    }
+    case 'ocsp': {
+      if (tt === 'copywriting') return TASK_TYPE_SP.copywriting;
+      return OCSP_ASSET_SP[at] ?? null;
+    }
+    default: return null;
+  }
+}
+
 // ── Requests ────────────────────────────────────────────────────────────────
 
 function getAllRequests(filters = {}) {
@@ -174,14 +263,18 @@ function getAllRequests(filters = {}) {
     list = list.filter(r => filters.requesterProjects.includes(r.project));
 
   // projects (plural) filter for creative leads
-  // 'studio' is a client-side view-filter on the lead's own pool — it never
-  // grants access to tickets outside the lead's regular projects.
   if (filters.projects !== undefined) {
     const regularProjects = filters.projects.filter(p => p !== 'studio' && p !== 'copywriting');
+    const studioIds       = filters.studioMemberIds || [];
 
-    if (!regularProjects.length) return [];
+    if (!regularProjects.length && !studioIds.length) return [];
 
-    list = list.filter(r => regularProjects.includes(r.project));
+    list = list.filter(r => {
+      if (regularProjects.includes(r.project)) return true;
+      // Cross-project: ticket has a studio child assigned to this lead's studio team
+      return studioIds.length > 0 &&
+        (r.childIssues || []).some(c => c.is_need_studio && studioIds.includes(c.assignedTo?.id));
+    });
   }
 
   if (!filters.includeApproved) list = list.filter(r => r.status !== 'approved');
@@ -199,15 +292,24 @@ function createRequest(data) {
   const num       = nextTicketNumber(data.project, requests);
   const ticketId  = makeTicketId(data.project, num);
 
-  const childIssues = (data.childIssues || []).map((child, idx) => ({
-    id:            uuidv4(),
-    ticketId:      makeChildTicketId(ticketId, idx),
-    status:        'requested',
-    statusHistory: [{ from: null, to: 'requested', changedAt: now }],
-    ...child
-  }));
+  const childIssues = (data.childIssues || []).map((child, idx) => {
+    const isCopywriting = (child.task_type || '').toLowerCase() === 'copywriting';
+    const sp = computeChildSP(data.project, { ...child, is_need_copywriting: isCopywriting }, data.fields || {});
+    return {
+      id:                  uuidv4(),
+      ticketId:            makeChildTicketId(ticketId, idx),
+      status:              'requested',
+      statusHistory:       [{ from: null, to: 'requested', changedAt: now }],
+      is_need_copywriting: isCopywriting,
+      ...child,
+      storyPoints:         sp !== null ? sp : (child.storyPoints ?? null),
+    };
+  });
 
   const { childIssues: _ci, ...rest } = data;
+  const totalSP = childIssues.length && childIssues.some(c => c.storyPoints != null)
+    ? childIssues.reduce((sum, c) => sum + (c.storyPoints || 0), 0)
+    : null;
   const newRequest = {
     id:            uuidv4(),
     ticketId,
@@ -217,6 +319,7 @@ function createRequest(data) {
     statusHistory: [{ from: null, to: 'requested', changedAt: now, changedBy: data.submittedBy || null }],
     submittedAt:   now,
     ...rest,
+    storyPoints:   totalSP,
     childIssues
   };
   requests.push(newRequest);

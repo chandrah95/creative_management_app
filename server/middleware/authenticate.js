@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { findUserById } = require('../storage/localAdapter');
+const { findUserById } = require('../storage/supabaseAdapter');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_in_production';
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -13,7 +13,7 @@ function authenticate(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     // Always merge with fresh DB data so stale tokens and newly-registered
     // users (who get empty projects/leadId) still work correctly.
-    const dbUser = findUserById(decoded.id);
+    const dbUser = await findUserById(decoded.id);
     if (dbUser) {
       decoded.role       = dbUser.role;
       decoded.projects   = dbUser.projects   || [];

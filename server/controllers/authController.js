@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { findUserByEmail, findUserById, createUser, getAllLeads } = require('../storage/localAdapter');
+const { findUserByEmail, findUserById, createUser, getAllLeads } = require('../storage/supabaseAdapter');
 const { JWT_SECRET } = require('../middleware/authenticate');
 
 const EXPIRES_NORMAL = '24h';
@@ -24,7 +24,7 @@ async function login(req, res) {
     return res.status(400).json({ success: false, error: 'Email and password are required' });
   }
 
-  const user = findUserByEmail(email.toLowerCase().trim());
+  const user = await findUserByEmail(email.toLowerCase().trim());
   if (!user) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
   const isBcrypt = user.password?.startsWith('$2');
@@ -49,7 +49,7 @@ async function register(req, res) {
   const allowed = ['requester', 'creative_designer', 'creative_lead'];
   const userRole = allowed.includes(role) ? role : 'requester';
 
-  if (findUserByEmail(email.toLowerCase().trim())) {
+  if (await findUserByEmail(email.toLowerCase().trim())) {
     return res.status(409).json({ success: false, error: 'Email already registered' });
   }
 
@@ -58,7 +58,7 @@ async function register(req, res) {
 
   // Designer: assign to lead and restrict projects to selected scopes
   if (userRole === 'creative_designer' && req.body.leadId) {
-    const lead = findUserById(req.body.leadId);
+    const lead = await findUserById(req.body.leadId);
     if (!lead) {
       return res.status(400).json({ success: false, error: 'The selected Creative Lead does not exist. Please refresh and try again.' });
     }
@@ -98,8 +98,9 @@ async function register(req, res) {
   res.status(201).json({ success: true, token: makeToken(newUser, EXPIRES_NORMAL), user: safeUser(newUser) });
 }
 
-function getLeads(req, res) {
-  res.json({ success: true, data: getAllLeads() });
+async function getLeads(req, res) {
+  const leads = await getAllLeads();
+  res.json({ success: true, data: leads });
 }
 
 function me(req, res) {

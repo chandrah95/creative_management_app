@@ -2,48 +2,61 @@
   "id": "ebxc",
   "name": "Existing Buyer",
   "fields": [
-    { "type": "input",    "name": "title",          "label": "Campaign Title",        "placeholder": "e.g. Member Re-engagement Q2", "required": true,  "width": "full" },
-    { "type": "textarea", "name": "description",    "label": "Campaign Brief",        "placeholder": "Describe the goal and message of this campaign", "required": true, "width": "full", "rows": 4 },
-    { "type": "dropdown", "name": "campaign_type",  "label": "Campaign Type",         "required": true, "width": "half",
-      "options": [
-        { "value": "retention",   "label": "Retention" },
-        { "value": "upsell",      "label": "Upsell" },
-        { "value": "cross_sell",  "label": "Cross-sell" },
-        { "value": "win_back",    "label": "Win-back" },
-        { "value": "loyalty",     "label": "Loyalty Reward" }
-      ]
-    },
-    { "type": "dropdown", "name": "priority",       "label": "Priority",              "required": true, "width": "half",
-      "options": [
-        { "value": "low",      "label": "Low" },
-        { "value": "medium",   "label": "Medium" },
-        { "value": "high",     "label": "High" },
-        { "value": "critical", "label": "Critical" }
-      ]
-    },
-    { "type": "date",     "name": "deadline",       "label": "Deadline",              "required": true,  "width": "half" },
-    { "type": "number",   "name": "revisions",      "label": "Max Revisions",         "required": false, "width": "half", "min": 1, "max": 10, "default": 2 },
-    { "type": "url",      "name": "reference_url",  "label": "Reference / Guideline", "placeholder": "https://...", "required": false, "width": "full" },
-    { "type": "textarea", "name": "notes",          "label": "Additional Notes",      "placeholder": "Any special requirements...", "required": false, "width": "full", "rows": 3 }
+    { "type": "input",    "name": "title",               "label": "Campaign Name",       "placeholder": "e.g. Member Re-engagement Q2", "required": true,  "width": "full" },
+    { "type": "input",    "name": "campaign_code",        "label": "Campaign Code",       "placeholder": "e.g. EBXC-2506-001", "required": true, "width": "half" },
+    { "type": "textarea", "name": "description",          "label": "Description",         "placeholder": "Describe the goal and message of this campaign", "required": false, "width": "full", "rows": 3 },
+    { "type": "url",      "name": "brief_deck_url",       "label": "Brief Deck URL",      "placeholder": "https://...", "required": false, "width": "full" },
+    { "type": "date",     "name": "campaign_start_date",  "label": "Campaign Start Date", "required": true,  "width": "half" },
+    { "type": "date",     "name": "campaign_end_date",    "label": "Campaign End Date",   "required": true,  "width": "half" }
   ],
   "childIssue": {
     "enabled": true,
     "label": "Add Asset",
     "fields": [
-      { "type": "input",    "name": "child_title",  "label": "Asset Name",  "required": true,  "width": "full" },
-      { "type": "dropdown", "name": "child_type",   "label": "Asset Type",  "required": true,  "width": "half",
+      { "type": "dropdown", "name": "task_type", "label": "Task Type", "required": true, "width": "half", "onchange": "window.taskTypeChanged(this)",
         "options": [
-          { "value": "banner",    "label": "Banner" },
-          { "value": "email",     "label": "Email Template" },
-          { "value": "push",      "label": "Push Notification Visual" },
-          { "value": "voucher",   "label": "Voucher Design" },
-          { "value": "other",     "label": "Other" }
+          { "value": "image",       "label": "Image" },
+          { "value": "motion",      "label": "Motion" },
+          { "value": "video",       "label": "Video" },
+          { "value": "copywriting", "label": "Copywriting" }
         ]
       },
-      { "type": "date",     "name": "child_due",        "label": "Due Date",           "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_studio",       "label": "Needs Studio Team?",       "required": false, "width": "half" },
-      { "type": "checkbox", "name": "is_need_copywriting",  "label": "Needs Copywriting?",       "required": false, "width": "half" },
-      { "type": "textarea", "name": "child_notes",     "label": "Notes",              "required": false, "width": "full", "rows": 2 }
+      { "type": "cascading_dropdown", "name": "asset_type", "label": "Asset Type", "required": true, "width": "half",
+        "groups": [
+          { "value": "banner", "label": "Banner", "options": [
+            { "value": "ribbon",       "label": "Ribbon" },
+            { "value": "quadruple",    "label": "Quadruple" },
+            { "value": "homepage",     "label": "Homepage" },
+            { "value": "dlp",          "label": "DLP" },
+            { "value": "category",     "label": "Category" },
+            { "value": "slide",        "label": "Slide" },
+            { "value": "milestone",    "label": "Milestone" },
+            { "value": "headline",     "label": "Headline" },
+            { "value": "catalogue",    "label": "Catalogue" },
+            { "value": "pop_up",       "label": "Pop Up" },
+            { "value": "blog",         "label": "Blog" },
+            { "value": "2x2",          "label": "2x2" },
+            { "value": "masthead",     "label": "Masthead" }
+          ]},
+          { "value": "tile", "label": "Tile", "options": [
+            { "value": "tile_category",  "label": "Category" },
+            { "value": "tile_catalogue", "label": "Catalogue" },
+            { "value": "big_catalogue",  "label": "Big Catalogue" }
+          ]},
+          { "value": "other", "label": "Other", "options": [
+            { "value": "logo",            "label": "Logo" },
+            { "value": "recipe",          "label": "Recipe" },
+            { "value": "3rd_party_thumb", "label": "3rd Party Thumbnail" },
+            { "value": "others",          "label": "Others" }
+          ]}
+        ]
+      },
+      { "type": "input",  "name": "dlp_id",      "label": "DLP ID",      "placeholder": "Enter DLP ID",      "required": true,  "width": "half", "hidden": true },
+      { "type": "input",  "name": "banner_name",  "label": "Banner Name", "placeholder": "Enter banner name", "required": true,  "width": "half", "hidden": true },
+      { "type": "input",  "name": "category_id",  "label": "Category ID", "placeholder": "Enter category ID", "required": true,  "width": "half", "hidden": true, "input_type": "number" },
+      { "type": "input",  "name": "catalogue_id", "label": "Catalogue ID","placeholder": "Enter catalogue ID","required": true,  "width": "half", "hidden": true, "input_type": "number" },
+      { "type": "input",  "name": "reference_id", "label": "Reference ID","placeholder": "Optional reference ID","required": false,"width": "half", "hidden": true },
+      { "type": "checkbox", "name": "is_need_studio", "label": "Needs Studio Team?", "required": false, "width": "half" }
     ]
   }
 }

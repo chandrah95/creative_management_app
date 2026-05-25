@@ -5,11 +5,14 @@
   "main": "server/app.js",
   "scripts": {
     "start": "node server/app.js",
-    "dev": "nodemon server/app.js"
+    "dev": "nodemon server/app.js",
+    "test:db": "node server/scripts/testDb.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "uuid": "^9.0.0"

@@ -24,6 +24,9 @@ export function validateFields(fields, prefix = '') {
   let valid = true;
   fields.forEach(f => {
     const id = prefix + f.name;
+    // Skip hidden conditional fields
+    const wrapper = document.querySelector(`[data-field="${id}"]`);
+    if (wrapper && wrapper.style.display === 'none') return;
     const value = getFieldValue(f, prefix);
     const error = validateField(f, value);
     const errEl = document.getElementById(`${id}-error`);

@@ -8,19 +8,32 @@ const formRoutes    = require('./routes/forms');
 const userRoutes    = require('./routes/users');
 const aiRoutes      = require('./routes/ai');
 const notifRoutes   = require('./routes/notifications');
-const { initStorage } = require('./storage/localAdapter');
+const { initStorage } = require('./storage/supabaseAdapter');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: ['http://localhost:3000', 'http://127.0.0.1:3000'] }));
-app.use(express.json());
+// Allow localhost for dev + any Vercel deployment URL for prod.
+// Set CORS_ORIGIN env var to lock it down to your specific domain.
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) return cb(null, true);
+    // In production allow same-origin requests (Vercel serves API + client on same domain)
+    if (process.env.NODE_ENV === 'production') return cb(null, true);
+    cb(new Error('CORS: origin not allowed'));
+  }
+}));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, '../client')));
 
-app.use('/api/auth',     authRoutes);
-app.use('/api/requests', requestRoutes);
-app.use('/api/forms',    formRoutes);
-app.use('/api/users',    userRoutes);
+app.use('/api/auth',          authRoutes);
+app.use('/api/requests',      requestRoutes);
+app.use('/api/forms',         formRoutes);
+app.use('/api/users',         userRoutes);
 app.use('/api/ai',            aiRoutes);
 app.use('/api/notifications', notifRoutes);
 
@@ -32,4 +45,9 @@ app.get('/ai-settings', (_, res) => res.sendFile(path.join(__dirname, '../client
 
 initStorage();
 
-app.listen(PORT, () => console.log(`Creative Hub running at http://localhost:${PORT}`));
+// Only start the HTTP server when run directly (not when imported by Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Creative Hub running at http://localhost:${PORT}`));
+}
+
+module.exports = app;

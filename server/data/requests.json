@@ -1,1 +1,109 @@
-[]
+[
+  {
+    "id": "71531b7b-e854-4dbe-9a33-974acdf7511d",
+    "ticketId": "PAC-01",
+    "status": "requested",
+    "assignedTo": {
+      "id": "0702cd32-5314-46aa-9275-f47ed9152b25",
+      "name": "Designer PAC/OCSP 1",
+      "email": "designer1.pacocsp@astronauts.id"
+    },
+    "comments": [],
+    "statusHistory": [
+      {
+        "from": null,
+        "to": "requested",
+        "changedAt": "2026-05-25T07:52:32.680Z",
+        "changedBy": {
+          "id": "e186bcca-83b0-46e9-a463-d8ca8dc42763",
+          "email": "requester@company.com",
+          "name": "Requester One"
+        }
+      }
+    ],
+    "submittedAt": "2026-05-25T07:52:32.680Z",
+    "project": "pac",
+    "fields": {
+      "title": "Tempe Chips Black Truffle 85gr",
+      "sku_number": "8815",
+      "packaging_type": "pouch",
+      "brand": "astro_goods",
+      "description": "ini testing doank ya",
+      "brief_deck_url": "https://docs.google.com/presentation/d/1sHQWpHUqcsr9VZxEGXFcP4HpIFl-o82kqYm57_RSx9Q/edit?slide=id.g3cd22d5c2ed_1_0#slide=id.g3cd22d5c2ed_1_0",
+      "live_date": "2026-05-31",
+      "dimensions": "[]"
+    },
+    "submittedBy": {
+      "id": "e186bcca-83b0-46e9-a463-d8ca8dc42763",
+      "email": "requester@company.com",
+      "name": "Requester One"
+    },
+    "storyPoints": 43,
+    "childIssues": [
+      {
+        "id": "c2ab591f-e6a7-4f98-b768-9c1aa6092c87",
+        "ticketId": "PAC-01-01",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-25T07:52:32.680Z"
+          }
+        ],
+        "is_need_copywriting": false,
+        "task_type": "packaging",
+        "is_need_studio": true,
+        "storyPoints": 32,
+        "assignedTo": {
+          "id": "e1de0f5f-bc8c-4d41-9c22-a3f7de0db260",
+          "name": "Studio 1",
+          "email": "studio1@astronauts.id"
+        }
+      },
+      {
+        "id": "fc5b15f0-43a1-4cbd-9726-082b0b5cca90",
+        "ticketId": "PAC-01-02",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-25T07:52:32.680Z"
+          }
+        ],
+        "is_need_copywriting": false,
+        "task_type": "packaging",
+        "is_need_studio": false,
+        "storyPoints": 9,
+        "assignedTo": {
+          "id": "0702cd32-5314-46aa-9275-f47ed9152b25",
+          "name": "Designer PAC/OCSP 1",
+          "email": "designer1.pacocsp@astronauts.id"
+        }
+      },
+      {
+        "id": "4a3be359-fa85-4705-9be9-8f081343a639",
+        "ticketId": "PAC-01-03",
+        "status": "requested",
+        "statusHistory": [
+          {
+            "from": null,
+            "to": "requested",
+            "changedAt": "2026-05-25T07:52:32.680Z"
+          }
+        ],
+        "is_need_copywriting": true,
+        "task_type": "copywriting",
+        "is_need_studio": false,
+        "storyPoints": 2,
+        "assignedTo": {
+          "id": "b693f10f-694e-40a0-9af1-66fddc30e3a7",
+          "name": "Copywriting 2",
+          "email": "copywriting2@astronauts.id"
+        }
+      }
+    ],
+    "updatedAt": "2026-05-25T08:06:40.492Z"
+  }
+]

@@ -616,9 +616,9 @@ function renderLeadView() {
   const totalSubs    = tickets.reduce((s, t) => s + (t.childIssues?.length || 0), 0);
   const unassSubs    = tickets.reduce((s, t) => s + (t.childIssues || []).filter(c => !c.assignedTo).length, 0);
 
-  const teamHtml = teamMembers.map(m => {
+  const teamHtml = teamMembers.filter(m => !m.isStudioPool).map(m => {
     const usedSP    = tickets.filter(t => t.assignedTo?.id === m.id).reduce((s, t) => s + (t.storyPoints || 0), 0);
-    const maxSP     = m.maxStoryPoints || 10;
+    const maxSP     = m.maxStoryPoints || 35;
     const loadClass = usedSP > maxSP ? 'sp-overload' : usedSP / maxSP >= 0.8 ? 'sp-high' : '';
     return `
       <div class="team-member-row">
@@ -994,8 +994,9 @@ function initCharts() {
   if (!donutCanvas || !barCanvas || !statusCanvas) return;
 
   // Build designer aggregation — task count (parent tickets) + subtask count
+  // Exclude studio-pool members (shared from another lead) from this lead's workload view
   const designerData = {};
-  for (const m of teamMembers) {
+  for (const m of teamMembers.filter(m => !m.isStudioPool)) {
     designerData[m.id] = { name: m.name, count: 0, subtaskCount: 0, storyPoints: 0 };
   }
   designerData['__unassigned__'] = { name: 'Unassigned', count: 0, subtaskCount: 0, storyPoints: 0 };
@@ -1006,14 +1007,17 @@ function initCharts() {
       const seen = {};
       for (const c of children) {
         const key = c.assignedTo?.id || '__unassigned__';
-        if (!designerData[key]) designerData[key] = { name: c.assignedTo?.name || 'Unknown', count: 0, subtaskCount: 0, storyPoints: 0 };
+        // Skip sub-tasks assigned to someone outside this lead's team
+        if (key !== '__unassigned__' && !designerData[key]) continue;
+        if (!designerData[key]) designerData[key] = { name: 'Unassigned', count: 0, subtaskCount: 0, storyPoints: 0 };
         designerData[key].storyPoints  += (c.storyPoints || 0);
         designerData[key].subtaskCount += 1;
         if (!seen[key]) { seen[key] = true; designerData[key].count++; }
       }
     } else {
       const key = t.assignedTo?.id || '__unassigned__';
-      if (!designerData[key]) designerData[key] = { name: t.assignedTo?.name || 'Unknown', count: 0, subtaskCount: 0, storyPoints: 0 };
+      if (key !== '__unassigned__' && !designerData[key]) continue;
+      if (!designerData[key]) designerData[key] = { name: 'Unassigned', count: 0, subtaskCount: 0, storyPoints: 0 };
       designerData[key].count++;
       designerData[key].subtaskCount += 1;
       designerData[key].storyPoints  += (t.storyPoints || 0);
@@ -1312,7 +1316,7 @@ function buildAutoAssignPanel(unassignedCount, members) {
   // Build live load summary
   const loadsNow = buildDesignerLoads();
   const memberSummary = members.map(m => {
-    const d   = loadsNow[m.id] || { usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+    const d   = loadsNow[m.id] || { usedSP: 0, maxSP: m.maxStoryPoints || 35 };
     const cls = d.usedSP > d.maxSP ? 'overload' : d.usedSP / d.maxSP >= 0.8 ? 'high' : '';
     return `<div class="aap-member">
       <span class="aap-avatar">${m.name[0].toUpperCase()}</span>
@@ -1350,7 +1354,7 @@ function buildAutoAssignPanel(unassignedCount, members) {
 function buildDesignerLoads() {
   const loads = {};
   for (const m of teamMembers) {
-    loads[m.id] = { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+    loads[m.id] = { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 35 };
   }
   for (const t of tickets) {
     if (t.childIssues?.length) {
@@ -1419,7 +1423,7 @@ window.autoAssignTicket = async function (ticketId) {
       const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
       if (!eligible.length) return;
       const sub = {};
-      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 35 };
       const designer = pickBestDesigner(sub, totalSP);
       if (!designer) return;
       for (const c of kids) {
@@ -1440,7 +1444,7 @@ window.autoAssignTicket = async function (ticketId) {
       const designers = getEligibleDesignersForTask(t.project, false, false);
       if (!designers.length) continue;
       const sub = {};
-      for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+      for (const m of designers) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 35 };
       const designer = pickBestDesigner(sub, c.storyPoints);
       if (!designer) continue;
       try {
@@ -1488,7 +1492,7 @@ window.autoAssignTicketModal = async function (ticketId) {
       const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
       if (!eligible.length) return;
       const sub = {};
-      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+      for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 35 };
       const designer = pickBestDesigner(sub, totalSP);
       if (!designer) return;
       for (const c of kids) {
@@ -1573,7 +1577,7 @@ window.autoAssignAll = async function () {
         const eligible = getEligibleDesignersForTask(t.project, isStudio, isCW);
         if (!eligible.length) return;
         const sub = {};
-        for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 10 };
+        for (const m of eligible) sub[m.id] = loads[m.id] || { member: m, usedSP: 0, maxSP: m.maxStoryPoints || 35 };
         const designer = pickBestDesigner(sub, totalSP);
         if (!designer) return;
         for (const c of kids) {
@@ -1629,7 +1633,7 @@ window.autoAssignAll = async function () {
 
 window.updateDesignerCapacity = async function (designerId, input) {
   const cap = parseInt(input.value, 10);
-  if (isNaN(cap) || cap < 1) { input.value = input.dataset.prev || 10; return; }
+  if (isNaN(cap) || cap < 1) { input.value = input.dataset.prev || 35; return; }
   try {
     await window.api.put(`/api/users/${designerId}/capacity`, { maxStoryPoints: cap });
     const m = teamMembers.find(x => x.id === designerId);
@@ -1637,7 +1641,7 @@ window.updateDesignerCapacity = async function (designerId, input) {
     input.dataset.prev = cap;
   } catch (err) {
     alert(err.message);
-    input.value = input.dataset.prev || 10;
+    input.value = input.dataset.prev || 35;
   }
 };
 
@@ -1649,7 +1653,7 @@ function childRow(ticketId, c) {
     <div class="child-item">
       <span class="child-dot"></span>
       ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
-      <span class="child-title">${escHtml(c.child_title || '—')}</span>
+      <span class="child-title">${escHtml(childLabel(c))}</span>
       <span class="child-due">${c.child_due ? fmtDate(c.child_due) : ''}</span>
       ${c.storyPoints != null ? `<span class="sp-badge" style="font-size:10px;padding:1px 6px">SP:${c.storyPoints}</span>` : ''}
       ${c.assignedTo ? `<span class="assignee-tag" style="font-size:10px;padding:1px 8px">${escHtml(c.assignedTo.name)}</span>` : ''}
@@ -1765,7 +1769,7 @@ function buildChildDiscPopupHtml(c) {
       <div class="child-disc-popup-header">
         <div>
           <div class="child-disc-popup-sub">Subtask Discussion</div>
-          <div class="child-disc-popup-title">${escHtml(c.child_title || '—')}</div>
+          <div class="child-disc-popup-title">${escHtml(childLabel(c))}</div>
         </div>
         <button class="modal-close" onclick="closeChildDiscussion()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1863,7 +1867,7 @@ function buildModalContent(t) {
             <div class="modal-child-item">
               <div class="modal-child-main">
                 ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
-                <span class="child-title">${escHtml(c.child_title||'—')}</span>
+                <span class="child-title">${escHtml(childLabel(c))}</span>
                 ${c.child_due ? `<span class="child-due">Due: ${fmtDate(c.child_due)}</span>` : ''}
                 <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
                 ${c.is_need_studio      ? `<span class="studio-badge">🎬 Studio</span>` : ''}
@@ -2457,6 +2461,16 @@ function contextEmptyState(role, view) {
 
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function childLabel(c) {
+  if (c.child_title) return c.child_title;
+  const parts = [];
+  if (c.task_type) parts.push(c.task_type.charAt(0).toUpperCase() + c.task_type.slice(1));
+  const asset = c.asset_type || c.objective_type || c.packaging_type || '';
+  if (asset) parts.push(asset.replace(/_/g, ' '));
+  if (!asset && c.platform) parts.push(c.platform);
+  return parts.join(' · ') || '—';
 }
 
 function fmtDate(str) {
