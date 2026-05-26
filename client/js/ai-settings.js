@@ -25,6 +25,7 @@ const MODEL_OPTIONS = {
 
 let currentUser = null;
 let savedModel  = '';
+let keyIsLocked = false;
 
 async function init() {
   const raw = localStorage.getItem('crp_user') || sessionStorage.getItem('crp_user');
@@ -63,6 +64,20 @@ function buildSidebar() {
     </a>`;
 }
 
+function applyKeyLockedState(maskedKey) {
+  keyIsLocked = true;
+  document.getElementById('apiKeyInputWrap').style.display  = 'none';
+  document.getElementById('apiKeyLockedWrap').style.display = 'block';
+  document.getElementById('apiKeyMasked').textContent = maskedKey || '';
+}
+
+function applyKeyUnlockedState() {
+  keyIsLocked = false;
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyInputWrap').style.display  = 'block';
+  document.getElementById('apiKeyLockedWrap').style.display = 'none';
+}
+
 async function loadSettings() {
   try {
     const { data } = await window.api.get('/api/ai/settings');
@@ -71,7 +86,11 @@ async function loadSettings() {
       updateModelOptions(data.provider);
       savedModel = data.model || '';
       if (savedModel) document.getElementById('modelSelect').value = savedModel;
-      if (data.apiKey) document.getElementById('apiKeyInput').placeholder = data.apiKey;
+    }
+    if (data.apiKey) {
+      applyKeyLockedState(data.apiKey);
+    } else {
+      applyKeyUnlockedState();
     }
   } catch {}
 }
@@ -93,21 +112,33 @@ function updateModelOptions(provider) {
 window.saveSettings = async function () {
   const provider = document.getElementById('providerSelect').value;
   const model    = document.getElementById('modelSelect').value;
-  const apiKey   = document.getElementById('apiKeyInput').value.trim();
 
   if (!provider) return showStatus('Select a provider.', 'error');
   if (!model)    return showStatus('Select a model.', 'error');
-  if (!apiKey && !document.getElementById('apiKeyInput').placeholder.includes('••••')) {
-    return showStatus('Enter your API key.', 'error');
+
+  const body = { provider, model };
+
+  if (!keyIsLocked) {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) return showStatus('Enter your API key.', 'error');
+    body.apiKey = apiKey;
   }
 
-  const keyToSend = apiKey || document.getElementById('apiKeyInput').placeholder;
   try {
-    await window.api.post('/api/ai/settings', { provider, model, apiKey: keyToSend });
+    await window.api.post('/api/ai/settings', body);
     savedModel = model;
     showStatus('Settings saved.', 'success');
-    document.getElementById('apiKeyInput').value = '';
     await loadSettings();
+  } catch (err) {
+    showStatus(err.message, 'error');
+  }
+};
+
+window.detachApiKey = async function () {
+  try {
+    await window.api.delete('/api/ai/key');
+    applyKeyUnlockedState();
+    showStatus('API key removed.', 'success');
   } catch (err) {
     showStatus(err.message, 'error');
   }

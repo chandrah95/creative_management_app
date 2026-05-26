@@ -15,10 +15,22 @@ function getSettings(req, res) {
 function saveSettings(req, res) {
   if (req.user.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin only' });
   const { provider, apiKey, model } = req.body;
-  if (!provider || !apiKey) return res.status(400).json({ success: false, error: 'provider and apiKey are required' });
+  if (!provider) return res.status(400).json({ success: false, error: 'provider is required' });
   const existing = ai.getSettings();
-  const finalKey = apiKey.includes('••••') ? (existing?.apiKey || apiKey) : apiKey;
+  const finalKey = apiKey
+    ? (apiKey.includes('••••') ? (existing?.apiKey || apiKey) : apiKey)
+    : (existing?.apiKey || null);
+  if (!finalKey) return res.status(400).json({ success: false, error: 'apiKey is required' });
   ai.saveSettings({ provider, apiKey: finalKey, model: model || '' });
+  res.json({ success: true });
+}
+
+function removeApiKey(req, res) {
+  if (req.user.role !== 'admin') return res.status(403).json({ success: false, error: 'Admin only' });
+  const existing = ai.getSettings();
+  if (existing) {
+    ai.saveSettings({ provider: existing.provider, apiKey: '', model: existing.model || '' });
+  }
   res.json({ success: true });
 }
 
@@ -45,4 +57,4 @@ async function workloadSummary(req, res) {
   res.json({ success: true, data: summary });
 }
 
-module.exports = { getSettings, saveSettings, testConnection, workloadSummary };
+module.exports = { getSettings, saveSettings, removeApiKey, testConnection, workloadSummary };
