@@ -93,8 +93,8 @@ const SORT_OPTIONS = [
   { value: 'date_desc',    label: 'Newest first' },
   { value: 'date_asc',     label: 'Oldest first' },
   { value: 'priority',     label: 'Priority level' },
-  { value: 'sp_desc',      label: 'Story points ↓' },
-  { value: 'sp_asc',       label: 'Story points ↑' },
+  { value: 'sp_desc',      label: 'Working hours ↓' },
+  { value: 'sp_asc',       label: 'Working hours ↑' },
   { value: 'updated_desc', label: 'Recently edited' },
   { value: 'updated_asc',  label: 'Least recently edited' }
 ];
@@ -395,7 +395,7 @@ function queueBubble(t) {
               ${proj ? `<span class="meta-tag" style="color:${proj.color}">${proj.name}</span>` : ''}
               ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
               ${t.fields?.deadline ? `<span class="meta-tag">Due: ${fmtDate(t.fields.deadline)}</span>` : ''}
-              ${t.storyPoints != null ? `<span class="sp-badge">SP: ${t.storyPoints}</span>` : ''}
+              ${t.storyPoints != null ? `<span class="sp-badge">${t.storyPoints} hours</span>` : ''}
               ${studioCount ? `<span class="studio-badge">🎬 ${studioCount}</span>` : ''}
               ${cwCount ? `<span class="cw-badge">✍️ ${cwCount}</span>` : ''}
               ${subCount ? `<span class="meta-tag">${approvedSubs}/${subCount} sub-tasks done</span>` : ''}
@@ -464,7 +464,7 @@ function requesterBubble(t) {
             ${proj ? `<span class="meta-tag" style="color:${proj.color}">${proj.name}</span>` : ''}
             ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
             ${t.fields?.deadline ? `<span class="meta-tag">Due: ${fmtDate(t.fields.deadline)}</span>` : ''}
-            ${t.storyPoints != null ? `<span class="sp-badge">SP: ${t.storyPoints}</span>` : ''}
+            ${t.storyPoints != null ? `<span class="sp-badge">${t.storyPoints} hours</span>` : ''}
           </div>
         </div>
         <div class="ticket-bubble-right">
@@ -562,7 +562,7 @@ function designerBubble(t) {
               ${proj ? `<span class="meta-tag" style="color:${proj.color}">${proj.name}</span>` : ''}
               ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
               ${t.fields?.deadline ? `<span class="meta-tag">Due: ${fmtDate(t.fields.deadline)}</span>` : ''}
-              ${t.storyPoints != null ? `<span class="sp-badge">SP: ${t.storyPoints}</span>` : ''}
+              ${t.storyPoints != null ? `<span class="sp-badge">${t.storyPoints} hours</span>` : ''}
               ${hasChildren ? `<span class="meta-tag">${t.childIssues.length} sub-task${t.childIssues.length > 1 ? 's' : ''}</span>` : ''}
             </div>
           </div>
@@ -633,9 +633,9 @@ function renderLeadView() {
           <span class="sp-cap-used ${loadClass}">${usedSP}</span>
           <span class="sp-cap-sep">/</span>
           <input type="number" class="sp-cap-input" value="${maxSP}" min="1" max="999"
-            data-prev="${maxSP}" title="Max SP capacity"
+            data-prev="${maxSP}" title="Max working hours capacity"
             onchange="updateDesignerCapacity('${m.id}',this)">
-          <span class="sp-cap-label">SP cap</span>
+          <span class="sp-cap-label">hrs cap</span>
           ${usedSP > maxSP ? '<span class="sp-overload-tag">⚠ over</span>' : ''}
         </div>
         ${allLeads.length ? `<div class="team-member-actions" onclick="event.stopPropagation()">
@@ -695,7 +695,7 @@ function renderLeadView() {
         <p class="chart-hint">⚡ Click a slice to cross-filter</p>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Workload by Story Points</div>
+        <div class="chart-title">Workload by Working Hours</div>
         <div class="bar-chart-wrap" id="barChartWrap" style="position:relative;height:160px">
           <canvas id="barChart"></canvas>
         </div>
@@ -1094,7 +1094,7 @@ function initCharts() {
     data: {
       labels: barEntries.map(([, d]) => d.name),
       datasets: [{
-        label:           'Story Points',
+        label:           'Working Hours',
         data:            barEntries.map(([, d]) => d.storyPoints),
         backgroundColor: barColors.map(c => c + 'bb'),
         borderColor:     barColors,
@@ -1108,7 +1108,7 @@ function initCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend:  { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} SP` } }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} hrs` } }
       },
       scales: {
         x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f1f5f9' } },
@@ -1272,7 +1272,7 @@ function leadBubble(t, isStudioView = false) {
               ${proj ? `<span class="meta-tag" style="color:${proj.color}">${proj.name}</span>` : ''}
               ${t.fields?.priority ? `<span class="meta-tag">Priority: ${cap(t.fields.priority)}</span>` : ''}
               ${t.fields?.deadline ? `<span class="meta-tag">Due: ${fmtDate(t.fields.deadline)}</span>` : ''}
-              ${t.storyPoints != null ? `<span class="sp-badge">SP: ${t.storyPoints}</span>` : ''}
+              ${t.storyPoints != null ? `<span class="sp-badge">${t.storyPoints} hours</span>` : ''}
               ${studioCount > 0 && !isStudioView ? `<span class="studio-badge">🎬 ${studioCount} studio</span>` : ''}
               ${assigneeHtml}
             </div>
@@ -1331,12 +1331,12 @@ function buildAutoAssignPanel(unassignedCount, members) {
     return `<div class="aap-member">
       <span class="aap-avatar">${m.name[0].toUpperCase()}</span>
       <span class="aap-name">${escHtml(m.name)}</span>
-      <span class="aap-sp ${cls}">${d.usedSP}/${d.maxSP} SP</span>
+      <span class="aap-sp ${cls}">${d.usedSP}/${d.maxSP} hrs</span>
     </div>`;
   }).join('');
 
   const spNote = withoutSP
-    ? `<div class="aap-sp-note">⚠ ${withoutSP} ticket${withoutSP !== 1 ? 's' : ''} have no story points and will be skipped — set SP on those tickets first.</div>`
+    ? `<div class="aap-sp-note">⚠ ${withoutSP} ticket${withoutSP !== 1 ? 's' : ''} have no working hours set and will be skipped — set working hours first.</div>`
     : '';
 
   const btnDisabled = withSP.length === 0 ? 'disabled' : '';
@@ -1347,7 +1347,7 @@ function buildAutoAssignPanel(unassignedCount, members) {
         <div class="autoassign-title">⚡ Load-balancing Auto-assign</div>
         <div class="autoassign-desc">
           Assigns <strong>${withSP.length}</strong> of ${unassignedCount} unassigned ticket${unassignedCount !== 1 ? 's' : ''}
-          (those with story points set) — <strong>critical first</strong>, then high → medium → low.
+          (those with working hours set) — <strong>critical first</strong>, then high → medium → low.
         </div>
         ${spNote}
         <div class="aap-members">${memberSummary}</div>
@@ -1467,7 +1467,7 @@ window.autoAssignTicket = async function (ticketId) {
     await loadTickets();
   } else {
     if (!t.storyPoints) {
-      alert('Story points must be set on this ticket before it can be auto-assigned.');
+      alert('Working hours must be set on this ticket before it can be auto-assigned.');
       return;
     }
     const loads    = buildDesignerLoads();
@@ -1526,7 +1526,7 @@ window.autoAssignTicketModal = async function (ticketId) {
     await loadTickets();
   } else {
     const sp = parseInt(document.getElementById('storyPointsInput')?.value, 10) || (t?.storyPoints || 0);
-    if (!sp) { alert('Set story points before auto-assigning.'); return; }
+    if (!sp) { alert('Set working hours before auto-assigning.'); return; }
     const loads = buildDesignerLoads();
     const designer = pickBestDesigner(loads, sp);
     if (!designer) { alert('No available designers.'); return; }
@@ -1555,7 +1555,7 @@ window.autoAssignAll = async function () {
   const skippedSP = unassigned.length - withSP.length;
 
   if (!withSP.length) {
-    alert(`No unassigned tickets have story points set.\n\nSet story points on sub-tasks first.\n\n${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped (no story points).`);
+    alert(`No unassigned tickets have working hours set.\n\nSet working hours on sub-tasks first.\n\n${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped (no working hours).`);
     return;
   }
 
@@ -1631,7 +1631,7 @@ window.autoAssignAll = async function () {
     notice.className = 'alert alert-success';
     notice.style.marginBottom = '16px';
     let msg = `✓ Auto-assigned ${assigned} sub-task${assigned !== 1 ? 's' : ''} using scope-aware load balancing (priority-ordered).`;
-    if (skippedSP) msg += `  ${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped — no story points.`;
+    if (skippedSP) msg += `  ${skippedSP} ticket${skippedSP !== 1 ? 's' : ''} skipped — no working hours set.`;
     notice.textContent = msg;
     area.insertBefore(notice, area.firstChild);
     setTimeout(() => notice.remove(), 6000);
@@ -1665,7 +1665,7 @@ function childRow(ticketId, c) {
       ${c.ticketId ? `<span class="ticket-id-badge ticket-id-sm">${escHtml(c.ticketId)}</span>` : ''}
       <span class="child-title">${escHtml(childLabel(c))}</span>
       <span class="child-due">${c.child_due ? fmtDate(c.child_due) : ''}</span>
-      ${c.storyPoints != null ? `<span class="sp-badge" style="font-size:10px;padding:1px 6px">SP:${c.storyPoints}</span>` : ''}
+      ${c.storyPoints != null ? `<span class="sp-badge" style="font-size:10px;padding:1px 6px">${c.storyPoints}h</span>` : ''}
       ${c.assignedTo ? `<span class="assignee-tag" style="font-size:10px;padding:1px 8px">${escHtml(c.assignedTo.name)}</span>` : ''}
       <span class="status-badge status-${c.status} status-sm">${STATUS_LABELS[c.status]||c.status}</span>
       ${sel}
@@ -1834,14 +1834,14 @@ function buildModalContent(t) {
   // Parent-level SP: aggregated (read-only) when ticket has sub-tasks; editable otherwise
   const spSection = hasChildren ? `
     <div class="modal-section">
-      <div class="modal-section-title">Story Points (Total)</div>
+      <div class="modal-section-title">Working Hours (Total)</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <span class="sp-badge" style="font-size:13px;padding:4px 14px">SP: ${totalSP}</span>
-        <span style="font-size:11px;color:var(--text-muted)">Aggregated from sub-tasks — set SP on each sub-task below</span>
+        <span class="sp-badge" style="font-size:13px;padding:4px 14px">${totalSP} hours</span>
+        <span style="font-size:11px;color:var(--text-muted)">Aggregated from sub-tasks — set working hours on each sub-task below</span>
       </div>
     </div>` : canEditSP ? `
     <div class="modal-section">
-      <div class="modal-section-title">Story Points</div>
+      <div class="modal-section-title">Working Hours</div>
       <div class="sp-row">
         <input type="number" id="storyPointsInput" class="story-points-input"
           value="${t.storyPoints != null ? t.storyPoints : ''}" min="0" max="999" placeholder="—">
@@ -1849,8 +1849,8 @@ function buildModalContent(t) {
       </div>
     </div>` : (t.storyPoints != null ? `
     <div class="modal-section">
-      <div class="modal-section-title">Story Points</div>
-      <span class="sp-badge">SP: ${t.storyPoints}</span>
+      <div class="modal-section-title">Working Hours</div>
+      <span class="sp-badge">${t.storyPoints} hours</span>
     </div>` : '');
 
   // Designers only see sub-tasks assigned to them; leads/admins see all
@@ -1930,11 +1930,11 @@ function buildModalContent(t) {
                 })() : `<span class="assignee-tag" style="font-size:11px">${c.assignedTo ? escHtml(c.assignedTo.name) : '—'}</span>`}
               </div>
               <div class="child-sp-row">
-                <span class="child-sp-label">Story Points:</span>
+                <span class="child-sp-label">Working Hours:</span>
                 ${canEditSP
                   ? `<input type="number" class="child-sp-input" id="sp-child-${c.id}" data-child-id="${c.id}"
                        value="${c.storyPoints != null ? c.storyPoints : ''}" min="0" max="999" placeholder="—">`
-                  : `<span class="sp-badge" style="font-size:11px">${c.storyPoints != null ? 'SP: '+c.storyPoints : '—'}</span>`}
+                  : `<span class="sp-badge" style="font-size:11px">${c.storyPoints != null ? c.storyPoints+' hrs' : '—'}</span>`}
               </div>
               ${role !== 'requester' ? childStatusSelectModal(t.id, c) : ''}
               ${buildChildDiscussion(t.id, c)}
@@ -1943,7 +1943,7 @@ function buildModalContent(t) {
         ${canEditSP ? `
           <div style="padding:0 14px 14px;display:flex;justify-content:flex-end">
             <button class="btn btn-primary btn-sm" onclick="saveAllChildSP('${t.id}','${childIds}')">
-              Save Story Points
+              Save Working Hours
             </button>
           </div>` : ''}
       </details>
@@ -2004,7 +2004,7 @@ window.updateStoryPoints = async function (ticketId) {
   const raw   = input?.value?.trim();
   if (raw === '' || raw == null) return;
   const sp = parseInt(raw, 10);
-  if (isNaN(sp) || sp < 0) { alert('Please enter a valid story point value (0 or more).'); return; }
+  if (isNaN(sp) || sp < 0) { alert('Please enter a valid working hours value (0 or more).'); return; }
   try {
     const { data } = await window.api.put(`/api/requests/${ticketId}`, { storyPoints: sp });
     document.getElementById('modalContent').innerHTML = buildModalContent(data);

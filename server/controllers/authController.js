@@ -56,7 +56,10 @@ async function register(req, res) {
   const hash     = await bcrypt.hash(password, 10);
   const userData = { email: email.toLowerCase().trim(), password: hash, name: name.trim(), role: userRole, projects: [], department: '' };
 
-  // Designer: assign to lead and restrict projects to selected scopes
+  const SAFE_ALL       = ['smxc','daxc','ebxc','plxc','ocsp','pac','studio','copywriting'];
+  const SAFE_REQUESTER = ['smxc','daxc','ebxc','plxc','ocsp','pac'];
+
+  // Designer: assign to lead and set project scope directly
   if (userRole === 'creative_designer' && req.body.leadId) {
     const lead = await findUserById(req.body.leadId);
     if (!lead) {
@@ -65,33 +68,27 @@ async function register(req, res) {
     if (lead.role !== 'creative_lead') {
       return res.status(400).json({ success: false, error: 'Selected user is not a Creative Lead.' });
     }
-    if (true) { // lead existence and role validated above
-      const SCOPE_PROJECTS = {
-        'In App':       ['ebxc', 'plxc'],
-        'Out App 1':    ['smxc', 'daxc'],
-        'Out App 2':    ['ocsp', 'pac'],
-        'Studio':       ['studio'],
-        'Copywriting':  ['copywriting']
-      };
-      const scopes      = Array.isArray(req.body.scopes) ? req.body.scopes : [];
-      const leadProjects = lead.projects || [];
-
-      // Map selected scopes → project IDs, then intersect with the lead's actual projects
-      const scopedProjects = scopes.length
-        ? scopes.flatMap(s => SCOPE_PROJECTS[s] || []).filter(p => leadProjects.includes(p))
-        : leadProjects;
-
-      userData.leadId     = lead.id;
-      userData.projects   = scopedProjects;
-      userData.scopes     = scopes;
-      userData.department = scopes.length ? scopes.join(' & ') : (lead.department || '');
-    }
+    const projects = Array.isArray(req.body.projects)
+      ? req.body.projects.filter(p => SAFE_ALL.includes(p))
+      : [];
+    userData.leadId     = lead.id;
+    userData.projects   = projects.length ? projects : (lead.projects || []);
+    userData.department = projects.length ? projects.join(', ') : (lead.department || '');
   }
 
-  // Requester project scope (limits what they can submit and see)
-  if (userRole === 'requester' && Array.isArray(req.body.projects) && req.body.projects.length) {
-    const SAFE = ['smxc','daxc','ebxc','plxc','ocsp','pac'];
-    userData.projects = req.body.projects.filter(p => SAFE.includes(p));
+  // Creative Lead: set project scope
+  if (userRole === 'creative_lead' && Array.isArray(req.body.projects) && req.body.projects.length) {
+    userData.projects = req.body.projects.filter(p => SAFE_ALL.includes(p));
+  }
+
+  // Requester: project scope + direct superior email
+  if (userRole === 'requester') {
+    if (Array.isArray(req.body.projects) && req.body.projects.length) {
+      userData.projects = req.body.projects.filter(p => SAFE_REQUESTER.includes(p));
+    }
+    if (req.body.directSuperiorEmail) {
+      userData.directSuperiorEmail = req.body.directSuperiorEmail.toLowerCase().trim();
+    }
   }
 
   const newUser = await createUser(userData);

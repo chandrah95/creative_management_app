@@ -136,14 +136,15 @@ function ticketRowToLocal(row) {
 
 function userRowToLocal(row) {
   return {
-    id:             row.id,
-    email:          row.email,
-    name:           row.name,
-    role:           row.role,
-    projects:       row.projects       || [],
-    department:     row.department     || '',
-    leadId:         row.lead_id        || null,
-    maxStoryPoints: row.max_story_points || 35,
+    id:                   row.id,
+    email:                row.email,
+    name:                 row.name,
+    role:                 row.role,
+    projects:             row.projects             || [],
+    department:           row.department           || '',
+    leadId:               row.lead_id              || null,
+    maxStoryPoints:       row.max_story_points     || 35,
+    directSuperiorEmail:  row.direct_superior_email || null,
   };
 }
 
@@ -271,19 +272,20 @@ async function getAllLeads() {
 
 async function createUser(data) {
   const insert = {
-    id:               data.id       || uuidv4(),
-    email:            data.email,
-    password_hash:    data.password,
-    name:             data.name,
-    role:             data.role     || 'requester',
-    projects:         data.projects  || [],
-    department:       data.department || '',
-    lead_id:          data.leadId   || null,
-    max_story_points: data.maxStoryPoints || 35,
+    id:                    data.id       || uuidv4(),
+    email:                 data.email,
+    password_hash:         data.password,
+    name:                  data.name,
+    role:                  data.role     || 'requester',
+    projects:              data.projects  || [],
+    department:            data.department || '',
+    lead_id:               data.leadId   || null,
+    max_story_points:      data.maxStoryPoints || 35,
+    direct_superior_email: data.directSuperiorEmail || null,
   };
   const { data: row, error } = await supabase
     .from('users').insert(insert)
-    .select('id, email, name, role, projects, department, lead_id, max_story_points')
+    .select('id, email, name, role, projects, department, lead_id, max_story_points, direct_superior_email')
     .single();
   if (error) { console.error('[supabase] createUser:', error.message); throw error; }
   return userRowToLocal(row);

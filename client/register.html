@@ -87,35 +87,36 @@
         </div>
       </div>
 
-      <!-- Shown when requester is selected -->
-      <div class="form-group" id="requesterScopeGroup" style="display:none">
-        <label>Project Scope <span class="required">*</span></label>
-        <span class="field-hint">Choose the projects you work with. Only tickets from these projects will be visible to you in the queue. You can select multiple.</span>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:4px;flex-wrap:wrap;gap:6px">
-          <span id="scopeCounter" style="font-size:12px;color:var(--text-muted);font-weight:500"></span>
-          <div style="display:flex;gap:6px">
-            <button type="button" class="btn btn-sm btn-ghost" onclick="selectAllRequesterScope()">Select all</button>
-            <button type="button" class="btn btn-sm btn-ghost" onclick="clearAllRequesterScope()">Clear all</button>
-          </div>
-        </div>
-        <div id="requesterScopeOptions" class="scope-options"></div>
-      </div>
-
       <!-- Shown when creative_designer is selected -->
       <div class="form-group" id="leadPickerGroup" style="display:none">
         <label for="leadId">Your Creative Lead <span class="required">*</span></label>
         <div class="select-wrapper">
-          <select id="leadId" name="leadId" class="auth-select" onchange="onLeadChange(this.value)">
+          <select id="leadId" name="leadId" class="auth-select">
             <option value="">— Select your Creative Lead —</option>
           </select>
         </div>
       </div>
 
-      <!-- Shown after a lead is selected -->
-      <div class="form-group" id="scopePickerGroup" style="display:none">
-        <label>Scope <span class="required">*</span></label>
-        <span class="field-hint">Select the project area(s) you'll be working on. Multiple selection allowed.</span>
+      <!-- Shown for requester, creative_designer, and creative_lead -->
+      <div class="form-group" id="scopeGroup" style="display:none">
+        <label>Project Scope <span class="required">*</span></label>
+        <span class="field-hint" id="scopeGroupHint"></span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:4px;flex-wrap:wrap;gap:6px">
+          <span id="scopeCounter" style="font-size:12px;color:var(--text-muted);font-weight:500"></span>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-sm btn-ghost" onclick="selectAllScope()">Select all</button>
+            <button type="button" class="btn btn-sm btn-ghost" onclick="clearAllScope()">Clear all</button>
+          </div>
+        </div>
         <div id="scopeOptions" class="scope-options"></div>
+      </div>
+
+      <!-- Shown when requester is selected -->
+      <div class="form-group" id="superiorEmailGroup" style="display:none">
+        <label for="directSuperiorEmail">Direct Superior Email <span class="required">*</span></label>
+        <input type="email" id="directSuperiorEmail" name="directSuperiorEmail"
+          placeholder="superior@company.com" autocomplete="off" />
+        <span class="field-hint">Enter your direct manager's work email address.</span>
       </div>
 
       <div id="register-error" class="alert alert-error" style="display:none"></div>
@@ -135,62 +136,39 @@
 
     let leadsCache = null;
 
-    // Map scope group names → project IDs
-    const SCOPE_PROJECTS = {
-      'Out App 1':   ['smxc', 'daxc'],
-      'In App':      ['ebxc', 'plxc'],
-      'Out App 2':   ['ocsp', 'pac'],
-      'Studio':      ['studio'],
-      'Copywriting': ['copywriting']
-    };
-
-    // Visual metadata per scope
-    const SCOPE_META = {
-      'Out App 1':   { desc: 'Social Media (SMXC) · Digital Ads (DAXC)',               color: '#10b981' },
-      'In App':      { desc: 'Existing Buyer (EBXC) · Private Label (PLXC)',            color: '#6366f1' },
-      'Out App 2':   { desc: 'Offline Collateral (OCSP) · Packaging (PAC)',             color: '#ef4444' },
-      'Studio':      { desc: 'Studio Team — physical production support',                color: '#ec4899' },
-      'Copywriting': { desc: 'Copywriting Team — content, copy & BAU strategy',         color: '#7c3aed' }
-    };
-
-    // Which scope groups does this lead own?
-    function getLeadGroups(lead) {
-      return Object.entries(SCOPE_PROJECTS)
-        .filter(([, ps]) => ps.some(p => (lead.projects || []).includes(p)))
-        .map(([g]) => g);
-    }
-
-    function togglePassword() {
-      const input    = document.getElementById('password');
-      const btn      = document.getElementById('togglePwdBtn');
-      const eyeOpen  = document.getElementById('eye-open');
-      const eyeClosed = document.getElementById('eye-closed');
-      const isHidden = input.type === 'password';
-      input.type = isHidden ? 'text' : 'password';
-      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
-      btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
-      eyeOpen.style.display  = isHidden ? 'none' : '';
-      eyeClosed.style.display = isHidden ? '' : 'none';
-    }
-
-    // All regular project IDs for requester scope selection
-    const REQUESTER_PROJECTS = [
+    const ALL_PROJECTS = [
       { id: 'smxc', name: 'Social Media',       code: 'SMXC', color: '#10b981', group: 'Out App 1' },
       { id: 'daxc', name: 'Digital Ads',         code: 'DAXC', color: '#f59e0b', group: 'Out App 1' },
       { id: 'ebxc', name: 'Existing Buyer',      code: 'EBXC', color: '#6366f1', group: 'In App' },
       { id: 'plxc', name: 'Private Label',       code: 'PLXC', color: '#0ea5e9', group: 'In App' },
       { id: 'ocsp', name: 'Offline Collateral',  code: 'OCSP', color: '#ef4444', group: 'Out App 2' },
-      { id: 'pac',  name: 'Packaging',           code: 'PAC',  color: '#8b5cf6', group: 'Out App 2' }
+      { id: 'pac',  name: 'Packaging',           code: 'PAC',  color: '#8b5cf6', group: 'Out App 2' },
+      { id: 'studio',      name: 'Studio',       code: 'STD',  color: '#ec4899', group: 'Production' },
+      { id: 'copywriting', name: 'Copywriting',  code: 'CW',   color: '#7c3aed', group: 'Production' }
     ];
 
-    function renderRequesterScopeOptions() {
-      const el = document.getElementById('requesterScopeOptions');
-      // All projects pre-selected by default — user deselects what they don't need
-      el.innerHTML = REQUESTER_PROJECTS.map(p => `
+    const REQUESTER_PROJECTS = ALL_PROJECTS.filter(p => !['studio','copywriting'].includes(p.id));
+
+    function togglePassword() {
+      const input     = document.getElementById('password');
+      const btn       = document.getElementById('togglePwdBtn');
+      const eyeOpen   = document.getElementById('eye-open');
+      const eyeClosed = document.getElementById('eye-closed');
+      const isHidden  = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.setAttribute('aria-label',  isHidden ? 'Hide password' : 'Show password');
+      btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+      eyeOpen.style.display   = isHidden ? 'none' : '';
+      eyeClosed.style.display = isHidden ? '' : 'none';
+    }
+
+    function renderScopeOptions(projects) {
+      const el = document.getElementById('scopeOptions');
+      el.innerHTML = projects.map(p => `
         <div class="scope-card selected" onclick="toggleScopeCard(this)" data-scope="${p.id}">
           <div class="scope-check">✓</div>
           <span class="scope-dot" style="background:${p.color}"></span>
-          <input type="hidden" name="requester_scope" value="${p.id}">
+          <input type="hidden" name="project_scope" value="${p.id}">
           <div>
             <div class="scope-card-name">${p.name} <span style="font-size:10px;color:var(--text-muted)">${p.code}</span></div>
             <div class="scope-card-desc">${p.group}</div>
@@ -200,74 +178,61 @@
     }
 
     async function onRoleChange(role) {
-      const leadGroup          = document.getElementById('leadPickerGroup');
-      const scopeGroup         = document.getElementById('scopePickerGroup');
-      const requesterScopeGroup = document.getElementById('requesterScopeGroup');
+      const leadGroup      = document.getElementById('leadPickerGroup');
+      const scopeGroupEl   = document.getElementById('scopeGroup');
+      const superiorGroup  = document.getElementById('superiorEmailGroup');
+      const hint           = document.getElementById('scopeGroupHint');
 
-      leadGroup.style.display           = 'none';
-      scopeGroup.style.display          = 'none';
-      requesterScopeGroup.style.display = 'none';
+      leadGroup.style.display     = 'none';
+      scopeGroupEl.style.display  = 'none';
+      superiorGroup.style.display = 'none';
 
       if (role === 'requester') {
-        renderRequesterScopeOptions();
-        requesterScopeGroup.style.display = 'block';
+        hint.textContent = 'Choose the projects you work with. Only tickets from these projects will be visible to you. You can select multiple.';
+        renderScopeOptions(REQUESTER_PROJECTS);
+        scopeGroupEl.style.display  = 'block';
+        superiorGroup.style.display = 'block';
         return;
       }
 
-      if (role !== 'creative_designer') return;
-      leadGroup.style.display = 'block';
-
-      if (leadsCache) return; // already fetched
-      const sel = document.getElementById('leadId');
-      sel.innerHTML = '<option value="">— Loading… —</option>';
-      try {
-        const res  = await fetch('/api/auth/leads');
-        const data = await res.json();
-        leadsCache = data.data || [];
-        sel.innerHTML = '<option value="">— Select your Creative Lead —</option>' +
-          leadsCache.map(l => `<option value="${l.id}">${l.name}${l.department ? ' · ' + l.department : ''}</option>`).join('');
-      } catch {
-        sel.innerHTML = '<option value="">— Failed to load leads —</option>';
+      if (role === 'creative_lead') {
+        hint.textContent = 'Select the project areas your team will be working on. Multiple selection allowed.';
+        renderScopeOptions(ALL_PROJECTS);
+        scopeGroupEl.style.display = 'block';
+        return;
       }
-    }
 
-    function onLeadChange(leadId) {
-      const scopeGroup   = document.getElementById('scopePickerGroup');
-      const scopeOptions = document.getElementById('scopeOptions');
+      if (role === 'creative_designer') {
+        hint.textContent = 'Select the project areas you\'ll be working on. Multiple selection allowed.';
+        renderScopeOptions(ALL_PROJECTS);
+        leadGroup.style.display    = 'block';
+        scopeGroupEl.style.display = 'block';
 
-      if (!leadId || !leadsCache) { scopeGroup.style.display = 'none'; return; }
-
-      const lead   = leadsCache.find(l => l.id === leadId);
-      const groups = lead ? getLeadGroups(lead) : [];
-
-      if (!groups.length) { scopeGroup.style.display = 'none'; return; }
-
-      scopeOptions.innerHTML = groups.map(g => {
-        const meta = SCOPE_META[g] || {};
-        return `<div class="scope-card" onclick="toggleScopeCard(this)" data-scope="${g}">
-          <div class="scope-check">✓</div>
-          <span class="scope-dot" style="background:${meta.color}"></span>
-          <input type="hidden" name="scope" value="${g}" disabled>
-          <div>
-            <div class="scope-card-name">${g}</div>
-            <div class="scope-card-desc">${meta.desc || ''}</div>
-          </div>
-        </div>`;
-      }).join('');
-
-      scopeGroup.style.display = 'block';
+        if (leadsCache) return;
+        const sel = document.getElementById('leadId');
+        sel.innerHTML = '<option value="">— Loading… —</option>';
+        try {
+          const res  = await fetch('/api/auth/leads');
+          const data = await res.json();
+          leadsCache = data.data || [];
+          sel.innerHTML = '<option value="">— Select your Creative Lead —</option>' +
+            leadsCache.map(l => `<option value="${l.id}">${l.name}${l.department ? ' · ' + l.department : ''}</option>`).join('');
+        } catch {
+          sel.innerHTML = '<option value="">— Failed to load leads —</option>';
+        }
+      }
     }
 
     function updateScopeCounter() {
       const counter = document.getElementById('scopeCounter');
       if (!counter) return;
-      const total    = document.querySelectorAll('#requesterScopeOptions .scope-card').length;
-      const selected = document.querySelectorAll('#requesterScopeOptions .scope-card.selected').length;
+      const total    = document.querySelectorAll('#scopeOptions .scope-card').length;
+      const selected = document.querySelectorAll('#scopeOptions .scope-card.selected').length;
       counter.textContent = `${selected} of ${total} selected`;
     }
 
-    function selectAllRequesterScope() {
-      document.querySelectorAll('#requesterScopeOptions .scope-card').forEach(card => {
+    function selectAllScope() {
+      document.querySelectorAll('#scopeOptions .scope-card').forEach(card => {
         card.classList.add('selected');
         const input = card.querySelector('input[type="hidden"]');
         if (input) input.disabled = false;
@@ -275,8 +240,8 @@
       updateScopeCounter();
     }
 
-    function clearAllRequesterScope() {
-      document.querySelectorAll('#requesterScopeOptions .scope-card').forEach(card => {
+    function clearAllScope() {
+      document.querySelectorAll('#scopeOptions .scope-card').forEach(card => {
         card.classList.remove('selected');
         const input = card.querySelector('input[type="hidden"]');
         if (input) input.disabled = true;
@@ -286,15 +251,12 @@
 
     function toggleScopeCard(card) {
       const isSelected = card.classList.toggle('selected');
-      // Cards may use name="scope" (designer) or name="requester_scope" (requester)
       const input = card.querySelector('input[type="hidden"]');
       if (input) input.disabled = !isSelected;
-      // Update counter if this is a requester scope card
-      if (card.closest('#requesterScopeOptions')) updateScopeCounter();
+      updateScopeCounter();
     }
 
-    function getSelectedScopes() {
-      // Scope only within the designer scope picker, not requester scope cards
+    function getSelectedProjects() {
       return [...document.querySelectorAll('#scopeOptions .scope-card.selected')]
         .map(card => card.dataset.scope);
     }
@@ -305,7 +267,6 @@
       document.getElementById('registerBtn').disabled = false;
     }
 
-    // Initialize scope section for the default role on page load
     document.addEventListener('DOMContentLoaded', () => {
       onRoleChange(document.getElementById('role').value);
     });
@@ -324,46 +285,41 @@
       document.getElementById('registerBtnLoader').style.display = 'inline-block';
       document.getElementById('registerBtn').disabled = true;
 
-      // Validate requester scope
-      if (role === 'requester') {
-        const rp = [...document.querySelectorAll('#requesterScopeOptions .scope-card.selected')]
-          .map(card => card.dataset.scope);
-        if (!rp.length) {
-          errBox.textContent = 'Please select at least one project scope.';
-          errBox.style.display = 'block';
-          resetBtn();
-          return;
-        }
+      // Validate project scope (all roles)
+      const selectedProjects = getSelectedProjects();
+      if (!selectedProjects.length) {
+        errBox.textContent = 'Please select at least one project scope.';
+        errBox.style.display = 'block';
+        resetBtn();
+        return;
       }
 
-      // Validate designer-specific fields
-      if (role === 'creative_designer') {
-        if (!leadId) {
-          errBox.textContent = 'Please select your Creative Lead.';
-          errBox.style.display = 'block';
-          resetBtn();
-          return;
-        }
-        const scopes = getSelectedScopes();
-        if (!scopes.length) {
-          errBox.textContent = 'Please select at least one scope.';
-          errBox.style.display = 'block';
-          resetBtn();
-          return;
-        }
+      // Validate lead for designer
+      if (role === 'creative_designer' && !leadId) {
+        errBox.textContent = 'Please select your Creative Lead.';
+        errBox.style.display = 'block';
+        resetBtn();
+        return;
       }
 
-      const scopes            = role === 'creative_designer' ? getSelectedScopes() : [];
-      const requesterProjects = role === 'requester'
-        ? [...document.querySelectorAll('#requesterScopeOptions .scope-card.selected')]
-            .map(card => card.dataset.scope)
-        : [];
+      // Validate direct superior email for requester
+      const directSuperiorEmail = document.getElementById('directSuperiorEmail')?.value?.trim() || '';
+      if (role === 'requester' && !directSuperiorEmail) {
+        errBox.textContent = 'Please enter your direct superior\'s email address.';
+        errBox.style.display = 'block';
+        resetBtn();
+        return;
+      }
 
       try {
         const res  = await fetch('/api/auth/register', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ name, email, password, role, leadId, scopes, projects: requesterProjects })
+          body:    JSON.stringify({
+            name, email, password, role, leadId,
+            projects: selectedProjects,
+            directSuperiorEmail: directSuperiorEmail || undefined
+          })
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
