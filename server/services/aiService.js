@@ -10,12 +10,23 @@ const path  = require('path');
 const SETTINGS_FILE = path.join(__dirname, '../data/ai_settings.json');
 
 function getSettings() {
+  // Env vars take priority (required on Vercel — filesystem is ephemeral)
+  if (process.env.AI_PROVIDER && process.env.AI_API_KEY) {
+    return {
+      provider: process.env.AI_PROVIDER,
+      apiKey:   process.env.AI_API_KEY,
+      model:    process.env.AI_MODEL || '',
+    };
+  }
+  // Fallback: local file (works in local dev)
   try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); }
   catch { return null; }
 }
 
 function saveSettings(settings) {
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  // Only writes locally — on Vercel, use environment variables instead
+  try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); }
+  catch { /* read-only filesystem on serverless — silently skip */ }
 }
 
 const AI_TIMEOUT_MS = 15000; // 15 s — prevents indefinite hangs
